@@ -77,7 +77,9 @@ Verified luôn gắn với phạm vi điều kiện, nguồn và thời điểm 
 |---|---|---|
 | Đủ bằng chứng, điều kiện rule được thỏa mãn | PASS | Đúng trong phạm vi rule và thời điểm kiểm tra |
 | Đủ bằng chứng cho thấy vi phạm | VIOLATION | Có căn cứ mở/liên kết incident để điều tra |
-| Thiếu, trễ hoặc không đủ độ tin cậy | UNKNOWN / INSUFFICIENT_EVIDENCE | Nêu bằng chứng thiếu; chưa được suy ra FAILED hoặc VIOLATION |
+| Tổng bằng chứng sẵn có chưa đủ, quá trễ hoặc không đủ độ tin cậy để đánh giá rule | UNKNOWN / INSUFFICIENT_EVIDENCE | Nêu bằng chứng thiếu; chưa được suy ra FAILED hoặc VIOLATION |
+
+Mất processing report không bắt buộc dẫn đến UNKNOWN. Nếu tồn tại evidence độc lập, đáng tin cậy, liên kết được với event và đủ để đánh giá một rule cụ thể, evaluation của rule đó vẫn có thể là PASS hoặc VIOLATION. Kết luận này không tự khôi phục timeline attempts bị thiếu hoặc chứng minh mọi bước xử lý đều thành công. UNKNOWN chỉ áp dụng khi tổng bằng chứng sẵn có chưa đủ cho rule đang xét.
 
 Processing FAILED cần căn cứ cho lỗi xử lý; không suy ra FAILED chỉ vì monitor chưa nhận report. Event quá ngưỡng mà chưa có kết quả là timeout candidate để chú ý, chưa tự chứng minh nghiệp vụ sai. Không tự tạo incident lỗi nghiệp vụ chỉ từ việc thiếu tín hiệu; quy tắc escalation chi tiết sẽ được đặc tả ở giai đoạn phù hợp.
 
@@ -120,7 +122,7 @@ Developer xem Overview, mở Incident liên quan rồi Event Detail và Evidence
 
 **Đầu ra khi có evidence đầy đủ:** tìm thấy đúng một bút toán +100 cho event, rule kiểm tra nhân đôi có kết quả PASS và không có duplicate incident. Hai attempts tự thân không phải vi phạm.
 
-**Nếu chỉ thiếu report:** chưa đủ căn cứ khẳng định thành công hoặc thất bại; evaluation cần thể hiện UNKNOWN cho tới khi có evidence đáng tin phù hợp. Cách chống trùng, transaction, constraint và nguồn evidence sẽ được thiết kế ở bước kiến trúc/data model; tài liệu này không tự quyết định thay.
+**Nếu report thất lạc:** thiếu report tự thân chưa chứng minh xử lý thành công hoặc thất bại. Nếu evidence độc lập, đáng tin cậy và đủ cho rule chống nhân đôi xác nhận đúng một bút toán +100 liên kết với event, rule đó có thể PASS dù report chưa được phục hồi; evidence đủ cho thấy nhiều effects thì rule có thể VIOLATION. Chỉ giữ UNKNOWN khi tổng bằng chứng chưa đủ để đánh giá rule. Cách chống trùng, transaction, constraint và nguồn evidence sẽ được thiết kế ở bước kiến trúc/data model; tài liệu này không tự quyết định thay.
 
 ## 8. Tiêu chí thành công và cách nghiệm thu
 
@@ -130,7 +132,7 @@ Các chỉ tiêu dưới đây là mục tiêu nghiệm thu, chưa phải số �
 |---|---|---|
 | SC-01 | Từ Overview → Incident Detail → Event Detail → Evidence trong tối đa 4 thao tác điều hướng | Bắt đầu tại Overview đã mở; đếm click/menu/tab, không tính cuộn hoặc đọc; nếu đi qua Incident list thì tính thêm một thao tác |
 | SC-02 | Phân biệt một event, hai attempts và một effect | Đối chiếu timeline và evidence của ví dụ giao lại; không có duplicate incident khi chỉ có một effect |
-| SC-03 | Thiếu report không bị đánh đồng với FAILED/VIOLATION | Kiểm tra case thiếu evidence: hiện UNKNOWN và nêu phần còn thiếu; không tự coi thiếu tín hiệu là lỗi nghiệp vụ |
+| SC-03 | Thiếu report không bị đánh đồng với FAILED/VIOLATION | Thiếu report và không có evidence độc lập đủ dùng: UNKNOWN; có evidence độc lập đáng tin, đủ cho rule: PASS hoặc VIOLATION theo evidence; không suy diễn timeline attempts đã đầy đủ |
 | SC-04 | Kết quả có thể truy nguyên tới evidence | Từ evaluation/incident tìm được event, evidence nguồn/thời điểm hoặc lời giải thích chưa đủ chứng cứ |
 | SC-05 | Người xem hiểu rõ trạng thái mô phỏng | Các trang mock gắn Demo data; tài liệu không tuyên bố Backend/Kafka/monitoring thật đã chạy |
 | SC-06 | Người học giải thích được ERM trong khoảng 2 phút | Tự trình bày problem, người dùng, input/output, event/attempt/effect và giới hạn; trả lời ví dụ giao lại và mất report |
@@ -140,3 +142,13 @@ Nghiệm thu tài liệu phạm vi: nội dung phải thống nhất với kế 
 ### Bản giới thiệu ngắn để tự luyện
 
 ERM giúp backend developer điều tra event bất đồng bộ bằng cách nối thông tin event, các lần xử lý và bằng chứng nghiệp vụ. Ví dụ một OrderPaid có thể được giao hai lần nhưng nghiệp vụ vẫn chỉ được cộng điểm một lần. Tiến độ Kafka và report thành công chưa đủ chứng minh dữ liệu đúng. Monitor dự kiến đối chiếu evidence chỉ đọc để đánh giá rule; thiếu bằng chứng thì trả UNKNOWN. Developer đi từ Overview tới Incident, Event Detail và Evidence để hiểu vấn đề, còn cách khắc phục do con người quyết định. Starter kit hiện hướng tới frontend mock và tài liệu thiết kế; Backend, Kafka và giám sát thật được phát triển về sau.
+
+
+## 9. Open Questions — cần giải quyết ở chặng 2A
+
+| ID | Câu hỏi kiến trúc chưa chốt | Yêu cầu giải quyết tại 2A |
+|---|---|---|
+| OQ-01 | Monitor quan sát được event từ nguồn nào khi processing report thất lạc? | Xác định nguồn ghi nhận event, cách liên kết danh tính event với evidence và giới hạn quan sát khi mất report; không mặc định monitor đã biết event chỉ nhờ report bị mất |
+| OQ-02 | Làm thế nào demo phát hiện duplicate business effect khi schema dự kiến có `loyalty_entries.event_id UNIQUE`? | Phân tích xung đột giữa hai effects cùng event và UNIQUE trong cùng bảng/cấu hình; đề xuất các phương án sandbox/evidence an toàn để người dùng chốt, bảo toàn invariant mặc định |
+
+Cả hai câu hỏi là đầu vào bắt buộc của chặng 2A (Architecture và Data Model), chưa phải quyết định kiến trúc ở 1A. Không tự chọn nguồn quan sát event, thiết kế schema, tách sandbox hoặc bỏ ràng buộc UNIQUE trong tài liệu phạm vi này.
