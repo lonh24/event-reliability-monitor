@@ -68,10 +68,10 @@ Các thao tác dưới đây chạy bằng Codex; không đại diện kiểm tr
 - Xung đột UNIQUE với demo cộng điểm trùng đã được hai tài liệu đặt ra: giữ nguyên, dành quyết định thiết kế ở chặng 2A; chưa chốt schema.
 
 ## 8. Git và bảo mật
-- git status: đã kiểm tra trước init và sau tạo file; xác nhận cuối ở lịch sử cập nhật dưới đây.
-- Commit hash: NOT COMMITTED (chưa commit tại lúc soạn báo cáo; sẽ cập nhật sau lệnh thực tế).
+- git status: sạch sau commit khởi tạo (exit 0, không output); hai file progress được cập nhật để chốt bằng chứng trong commit docs tiếp theo.
+- Commit khởi tạo: `059c59f516f5bf135850e3a07766a184bfbe387e` — `chore: initialize ERM workspace`. Báo cáo chốt được lưu trong commit docs kế tiếp; dùng `git log -2 --oneline` để xem, tránh tự tham chiếu hash.
 - Remote/push: NOT CONFIGURED / NO. Không tạo repo GitHub hoặc đăng nhập.
-- Rà soát secrets và file sinh ra: kiểm tra danh sách source, diff và pattern trước commit; không đưa file đính kèm/tokens vào repo. Kết quả kiểm tra cuối được cập nhật sau chạy lệnh.
+- Rà soát secrets và file sinh ra: YES — đã đọc nội dung 8 file, kiểm tra staged diff, git diff --cached --check exit 0; scan private key/GitHub token/AWS key không có match. Không có dependencies/build/log/.env trong tracked files. Scan pattern không bảo đảm phát hiện mọi loại secret.
 
 ## 9. Nghiệm thu
 - [x] Workspace mới độc lập, không sửa repository cũ.
@@ -85,3 +85,9 @@ Các thao tác dưới đây chạy bằng Codex; không đại diện kiểm tr
 - Chặng tiếp theo: 1A — product scope, CHƯA ĐƯỢC LÀM.
 
 Lịch sử cập nhật: 2026-10-17 tạo báo cáo chặng 00; dừng chờ duyệt.
+
+Cập nhật kiểm chứng cuối:
+- Python kiểm tra 8 tracked files và đúng 13 chặng: PASS (exit 0).
+- `git diff --cached --check`: PASS, exit 0 trước commit khởi tạo.
+- Lỗi thao tác đã khắc phục: một lần chạy git add/status/diff từ thư mục cha không thuộc repo (status exit 128; diff báo unknown option cached). Không file nào bị thay đổi bởi các lệnh thất bại; đã chạy lại với workdir ERM và commit thành công. Đây không phải lỗi tồn tại của dự án.
+- Không có chặng 1A được triển khai. Các lỗi/thiếu công cụ còn lại giữ nguyên ở mục 3.

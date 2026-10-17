@@ -4,7 +4,7 @@ Chỉ chặng 00 đã thực hiện. Dừng chờ `DUYỆT 00 — TIẾP TỤC`.
 
 | Mã | Tên chặng | Trạng thái | Ngày hoàn thành | Báo cáo | Commit |
 |---|---|---|---|---|---|
-| 00 | Khảo sát máy và tạo workspace | PASS | 2026-10-17 | [00-report.md](00-report.md) | NOT COMMITTED |
+| 00 | Khảo sát máy và tạo workspace | PASS | 2026-10-17 | [00-report.md](00-report.md) | 059c59f (khởi tạo; báo cáo chốt ở commit docs kế tiếp) |
 | 1A | Product scope | TODO | — | — | — |
 | 1B | Use cases, demos, yêu cầu UI | TODO | — | — | — |
 | 2A | Kiến trúc và data model | TODO | — | — | — |
