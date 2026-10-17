@@ -14,17 +14,17 @@ Kafka offset và consumer lag phản ánh tiến độ tiêu thụ thông điệ
 
 ERM không cam kết suy ra toàn bộ business truth từ Kafka hoặc từ một processing report đơn lẻ.
 
-## 2. Mục tiêu sản phẩm và hiện trạng
+## 2. Mục tiêu sản phẩm và phạm vi phát triển
 
-Mục tiêu là giúp developer trả lời: event nào cần chú ý, đã được thử xử lý bao nhiêu lần, bằng chứng nào đang có, rule kết luận được gì và incident nào cần điều tra.
+ERM giúp backend developer trả lời: event nào cần chú ý, đã có những lần xử lý nào được ghi nhận, bằng chứng nghiệp vụ nào đang có, từng monitoring rule kết luận được gì và incident nào cần điều tra.
 
-| Phạm vi thời gian | Kết quả mục tiêu | Giới hạn |
+| Thành phần | Phạm vi dự kiến | Giới hạn |
 |---|---|---|
-| Starter kit 5 ngày | Tài liệu nghiệp vụ/thiết kế, frontend React + TypeScript + Vite dùng mock data, roadmap Backend 24 tuần | Không có monitoring live, Backend/Kafka/PostgreSQL runtime |
-| Giai đoạn Backend về sau | Demo order/loyalty, xử lý event, thu reports, đối chiếu evidence và cung cấp Monitor API | Chưa triển khai; thiết kế kỹ thuật và cách kiểm chứng sẽ được chốt riêng |
-| Hiện tại | Repository có cấu trúc, placeholder và tài liệu phạm vi này | Chưa có frontend hoặc Backend chạy được |
+| Dashboard prototype | Giao diện React + TypeScript + Vite sử dụng dữ liệu mô phỏng; thể hiện luồng điều tra event, rule evaluations và incidents | Không kết nối Kafka, PostgreSQL hoặc dịch vụ giám sát đang chạy |
+| Event monitoring backend | Ứng dụng order/loyalty minh họa, xử lý event, tiếp nhận processing reports, truy vấn business evidence chỉ đọc và cung cấp Monitor API | Là định hướng triển khai tiếp theo; không được xem là chức năng hiện có |
+| Thiết kế hệ thống | Đặc tả nghiệp vụ, luồng dữ liệu, mô hình dữ liệu, hợp đồng API và tiêu chí kiểm chứng | Chi tiết kỹ thuật được xác định tại các tài liệu thiết kế liên quan |
 
-Các mục dưới đây là yêu cầu thiết kế, không phải tuyên bố chức năng đã được hiện thực hoặc đo đạt.
+Tài liệu này mô tả **phạm vi và hành vi dự kiến**, không xác nhận rằng giao diện, Backend, Kafka hoặc database đã được triển khai và kiểm thử.
 
 ## 3. Các khái niệm phải tách biệt
 
@@ -52,7 +52,7 @@ Hai attempts không mặc nhiên tương đương hai effects. Trạng thái qua
 | Business evidence | Bằng chứng về tác động nghiệp vụ, nguồn và thời điểm kiểm tra | Chỉ đọc; thiếu hoặc không tin cậy thì không được kết luận chắc chắn |
 | Rule configuration | Điều kiện kiểm tra và ngưỡng liên quan | Chưa chốt schema, API hoặc rule engine ở tài liệu này |
 
-Ở starter kit, các đầu vào được mô phỏng bằng fixtures và mock adapter. Luồng nhận dữ liệu thật thuộc giai đoạn Backend về sau.
+Ở dashboard prototype, dữ liệu đến từ fixtures và mock adapter. Tích hợp nguồn dữ liệu thực thuộc phạm vi triển khai backend.
 
 ### Observed, reported và verified
 
@@ -69,7 +69,7 @@ Verified luôn gắn với phạm vi điều kiện, nguồn và thời điểm 
 - Evaluation giải thích rule đã kiểm tra gì, kết quả là gì và evidence hỗ trợ hoặc còn thiếu.
 - Incident liên kết vấn đề với event/evidence để developer điều tra và theo dõi trạng thái xử lý hồ sơ.
 
-Đây là output mục tiêu; trong frontend starter chúng đều là dữ liệu giả lập có nhãn **Demo data**.
+Đây là các đầu ra dự kiến; ở dashboard prototype, dữ liệu hiển thị phải được gắn nhãn **Demo data** để tránh nhầm với kết quả giám sát thực tế.
 
 ### Quy tắc kết luận
 
@@ -87,7 +87,7 @@ Chuyển incident sang RESOLVED là thay đổi trạng thái hồ sơ điều t
 
 ## 5. Phạm vi bao gồm
 
-| Thành phần | Phạm vi nghiệp vụ của starter kit |
+| Thành phần | Phạm vi nghiệp vụ của dashboard prototype |
 |---|---|
 | Applications | Xem các ứng dụng được theo dõi, tạo cấu hình ứng dụng mẫu bằng thao tác mock |
 | Events và attempts | Tìm/lọc event, đọc metadata và timeline các lần xử lý |
@@ -95,11 +95,11 @@ Chuyển incident sang RESOLVED là thay đổi trạng thái hồ sơ điều t
 | Incidents | Xem vấn đề, evidence, event liên quan và thao tác trạng thái OPEN → INVESTIGATING → RESOLVED trong mock |
 | Overview | Tổng hợp nhất quán từ cùng dataset, phân biệt kết quả đã xác định với UNKNOWN |
 
-UI mục tiêu gồm năm màn hình chính: Overview, Applications, Event Explorer, Monitoring Rules và Incidents; hai màn hình Event Detail, Incident Detail; cùng route 404. Yêu cầu trường và luồng thao tác chi tiết, use cases và toàn bộ kịch bản demo sẽ được đặc tả riêng sau tài liệu phạm vi.
+UI mục tiêu gồm năm màn hình chính: Overview, Applications, Event Explorer, Monitoring Rules và Incidents; hai màn hình Event Detail, Incident Detail; cùng route 404. Chi tiết về hành vi, dữ liệu và điều hướng được mô tả trong các tài liệu Use Cases, Demo Scenarios và Screen Requirements.
 
 ## 6. Ngoài phạm vi
 
-Trong starter kit 5 ngày không triển khai Spring Boot services chạy thật, PostgreSQL runtime, Kafka thật, consumer/background worker production, rule engine thật hoặc truy vấn evidence live. Hai Backend và infrastructure chỉ là placeholder tài liệu.
+Dashboard prototype không thực hiện monitoring live: không vận hành Spring Boot services, Kafka, PostgreSQL, consumer/background worker, rule engine hoặc truy vấn evidence thật. Các thành phần backend và infrastructure được thiết kế và triển khai riêng, không được ngầm coi là đã có chỉ vì giao diện hiển thị dữ liệu mô phỏng.
 
 Các tính năng sau không thuộc phạm vi đã khóa: tự sửa dữ liệu production, production replay, hỗ trợ nhiều brokers, AI root-cause analysis, billing, xác thực multi-tenant phức tạp, BI nâng cao, cloud production deployment và benchmark không có phép đo thực tế.
 
@@ -112,21 +112,21 @@ Kafka chuyển event tới consumer và có thể giao lại khi consumer gặp 
 Consumer xử lý event để tạo bút toán cộng điểm trong demo database; mục tiêu là các lần giao lại vẫn chỉ tạo một business effect.
 Ứng dụng gửi processing reports để monitor ghi nhận từng attempt, nhưng report có thể trễ hoặc thất lạc.
 Monitor kết hợp thông tin đã quan sát, reports và khi cần evidence adapter chỉ đọc để đánh giá rule; thiếu bằng chứng phải giữ UNKNOWN.
-Developer xem Overview, mở Incident liên quan rồi Event Detail và Evidence để hiểu vấn đề; trong starter kit toàn bộ luồng này chỉ được mô phỏng bằng mock data.
+Developer xem Overview, mở Incident liên quan rồi Event Detail và Evidence để hiểu vấn đề; trong dashboard prototype, toàn bộ luồng được mô phỏng bằng mock data.
 
 ### Ví dụ OrderPaid bị giao lại
 
 **Đầu vào:** một OrderPaid có danh tính `order-paid-1001`, dự kiến cộng 100 điểm; consumer thử xử lý hai lần sau một sự cố.
 
-**Xử lý mục tiêu:** hai attempts cùng liên kết về một event; cơ chế chống trùng của consumer thuộc giai đoạn Backend giữ tác động nghiệp vụ không bị lặp. Monitor không phải thành phần thực hiện chống trùng hay tự sửa ledger.
+**Xử lý mục tiêu:** hai attempts cùng liên kết về một event; consumer cần có cơ chế chống trùng để bảo đảm tác động nghiệp vụ không bị lặp. Monitor không phải thành phần thực hiện chống trùng hay tự sửa ledger.
 
 **Đầu ra khi có evidence đầy đủ:** tìm thấy đúng một bút toán +100 cho event, rule kiểm tra nhân đôi có kết quả PASS và không có duplicate incident. Hai attempts tự thân không phải vi phạm.
 
 **Nếu report thất lạc:** thiếu report tự thân chưa chứng minh xử lý thành công hoặc thất bại. Nếu evidence độc lập, đáng tin cậy và đủ cho rule chống nhân đôi xác nhận đúng một bút toán +100 liên kết với event, rule đó có thể PASS dù report chưa được phục hồi; evidence đủ cho thấy nhiều effects thì rule có thể VIOLATION. Chỉ giữ UNKNOWN khi tổng bằng chứng chưa đủ để đánh giá rule. Cách chống trùng, transaction, constraint và nguồn evidence sẽ được thiết kế ở bước kiến trúc/data model; tài liệu này không tự quyết định thay.
 
-## 8. Tiêu chí thành công và cách nghiệm thu
+## 8. Tiêu chí thành công và cách kiểm chứng
 
-Các chỉ tiêu dưới đây là mục tiêu nghiệm thu, chưa phải số đo đã đạt.
+Các chỉ tiêu dưới đây là yêu cầu có thể kiểm chứng khi các thành phần tương ứng được triển khai, chưa phải kết quả kiểm thử đã đạt.
 
 | ID | Tiêu chí | Cách kiểm tra khi có sản phẩm phù hợp |
 |---|---|---|
@@ -135,20 +135,19 @@ Các chỉ tiêu dưới đây là mục tiêu nghiệm thu, chưa phải số �
 | SC-03 | Thiếu report không bị đánh đồng với FAILED/VIOLATION | Thiếu report và không có evidence độc lập đủ dùng: UNKNOWN; có evidence độc lập đáng tin, đủ cho rule: PASS hoặc VIOLATION theo evidence; không suy diễn timeline attempts đã đầy đủ |
 | SC-04 | Kết quả có thể truy nguyên tới evidence | Từ evaluation/incident tìm được event, evidence nguồn/thời điểm hoặc lời giải thích chưa đủ chứng cứ |
 | SC-05 | Người xem hiểu rõ trạng thái mô phỏng | Các trang mock gắn Demo data; tài liệu không tuyên bố Backend/Kafka/monitoring thật đã chạy |
-| SC-06 | Người học giải thích được ERM trong khoảng 2 phút | Tự trình bày problem, người dùng, input/output, event/attempt/effect và giới hạn; trả lời ví dụ giao lại và mất report |
 
-Nghiệm thu tài liệu phạm vi: nội dung phải thống nhất với kế hoạch 5 ngày, tách mục tiêu và hiện trạng, nêu đủ in/out scope và không yêu cầu triển khai runtime trong starter kit. Nghiệm thu UI, rule engine hoặc hiệu năng chưa thể thực hiện chỉ bằng tài liệu này.
+Phạm vi cần nhất quán giữa yêu cầu nghiệp vụ, use cases, demo scenarios, màn hình và acceptance criteria. Việc đáp ứng các tiêu chí về UI, rule engine hoặc hiệu năng chỉ được xác nhận bằng triển khai và kiểm thử phù hợp, không chỉ bằng tài liệu thiết kế.
 
-### Bản giới thiệu ngắn để tự luyện
+### Tóm tắt sản phẩm
 
-ERM giúp backend developer điều tra event bất đồng bộ bằng cách nối thông tin event, các lần xử lý và bằng chứng nghiệp vụ. Ví dụ một OrderPaid có thể được giao hai lần nhưng nghiệp vụ vẫn chỉ được cộng điểm một lần. Tiến độ Kafka và report thành công chưa đủ chứng minh dữ liệu đúng. Monitor dự kiến đối chiếu evidence chỉ đọc để đánh giá rule; thiếu bằng chứng thì trả UNKNOWN. Developer đi từ Overview tới Incident, Event Detail và Evidence để hiểu vấn đề, còn cách khắc phục do con người quyết định. Starter kit hiện hướng tới frontend mock và tài liệu thiết kế; Backend, Kafka và giám sát thật được phát triển về sau.
+ERM giúp backend developer điều tra event bất đồng bộ bằng cách nối thông tin event, các lần xử lý và bằng chứng nghiệp vụ. Ví dụ một OrderPaid có thể được giao hai lần nhưng nghiệp vụ vẫn chỉ được cộng điểm một lần. Tiến độ Kafka và report thành công chưa đủ chứng minh dữ liệu đúng. Monitor dự kiến đối chiếu evidence chỉ đọc để đánh giá rule; thiếu bằng chứng thì trả UNKNOWN. Developer đi từ Overview tới Incident, Event Detail và Evidence để hiểu vấn đề, còn cách khắc phục do con người quyết định. Dashboard prototype thể hiện luồng điều tra bằng dữ liệu mô phỏng; khả năng giám sát sự kiện thực tế đòi hỏi các thành phần backend và tích hợp được triển khai, kiểm chứng riêng.
 
 
-## 9. Open Questions — cần giải quyết ở chặng 2A
+## 9. Các câu hỏi kiến trúc còn mở
 
-| ID | Câu hỏi kiến trúc chưa chốt | Yêu cầu giải quyết tại 2A |
+| ID | Câu hỏi kiến trúc chưa chốt | Nội dung cần làm rõ trong thiết kế kiến trúc và dữ liệu |
 |---|---|---|
 | OQ-01 | Monitor quan sát được event từ nguồn nào khi processing report thất lạc? | Xác định nguồn ghi nhận event, cách liên kết danh tính event với evidence và giới hạn quan sát khi mất report; không mặc định monitor đã biết event chỉ nhờ report bị mất |
 | OQ-02 | Làm thế nào demo phát hiện duplicate business effect khi schema dự kiến có `loyalty_entries.event_id UNIQUE`? | Phân tích xung đột giữa hai effects cùng event và UNIQUE trong cùng bảng/cấu hình; đề xuất các phương án sandbox/evidence an toàn để người dùng chốt, bảo toàn invariant mặc định |
 
-Cả hai câu hỏi là đầu vào bắt buộc của chặng 2A (Architecture và Data Model), chưa phải quyết định kiến trúc ở 1A. Không tự chọn nguồn quan sát event, thiết kế schema, tách sandbox hoặc bỏ ràng buộc UNIQUE trong tài liệu phạm vi này.
+Hai câu hỏi phải được giải quyết trong tài liệu Architecture và Data Model trước khi chốt cách triển khai. Product Scope không tự lựa chọn nguồn quan sát event, thiết kế schema, cách cô lập dữ liệu sandbox hoặc loại bỏ ràng buộc `UNIQUE`.
