@@ -1,23 +1,48 @@
-# Môi trường thực thi — chặng 0
-Ngày kiểm tra: 2026-10-17 (Asia/Saigon).
-Đây là container Linux của Codex, KHÔNG phải laptop Windows của người dùng.
-Working directory ban đầu: `/workspace/scratch/a5e980969f01`.
-Repo mới: `/workspace/scratch/a5e980969f01/event-reliability-monitor`.
-`git rev-parse --show-toplevel` tại thư mục ban đầu trả exit 128: không thuộc repository nào. Không có source repository cũ trong workspace được khảo sát; không sửa `sba301-clothing-shop`.
+# Yêu cầu môi trường phát triển
 
-| Lệnh | Kết quả thực tế | Exit | Đánh giá |
-|---|---|---|---|
-| `git --version` | git version 2.51.1 | 0 | TESTED |
-| `java -version` | OpenJDK 17.0.20 | 0 | TESTED; chưa đúng target Java 21 cho Backend tương lai |
-| `node -v` | v24.19.0 | 0 | TESTED; chưa thử tương thích Vite |
-| `npm -v` | 11.9.0 | 0 | TESTED; có cảnh báo cấu hình http-proxy |
-| `docker --version` | command not found | 127 | DEFERRED; không chặn frontend mock |
-| `git status --short` trước init | not a git repository | 128 | Trạng thái dự kiến của thư mục cha |
-| `git config --get user.name` | Codex | 0 | Identity môi trường, không phải xác nhận danh tính người dùng |
-| `git config --get user.email` | codex@openai.com | 0 | Identity môi trường |
+Tài liệu này mô tả công cụ cần chuẩn bị cho Event Reliability Monitor (ERM). Các yêu cầu dưới đây là định hướng phát triển, không phải xác nhận ứng dụng đã được build hoặc chạy trên một máy cụ thể.
 
-Không sửa cấu hình hệ thống, không cài công cụ. Cảnh báo npm: `Unknown env config "http-proxy". This will stop working in the next major version of npm.` Chưa điều tra/sửa vì không chặn lệnh kiểm tra phiên bản.
-Java 17 không chặn phạm vi frontend mock; Java 21 phải được chuẩn bị khi bắt đầu Backend. Docker hoãn đến giai đoạn Backend.
-Các số Git/Java/Node/npm trong prompt là thông tin lịch sử máy người dùng, không dùng làm bằng chứng kiểm chứng ở đây.
+## Hiện trạng
 
-Kiểm tra laptop (NOT VERIFIED): mở PowerShell chạy `git --version`, `java -version`, `node -v`, `npm -v`, `docker --version`. Không suy ra laptop đã sẵn sàng từ container này.
+Repository mới có cấu trúc ban đầu và tài liệu. Frontend, Backend và cấu hình Docker Compose chưa được triển khai; chưa có lệnh khởi chạy ứng dụng.
+
+## Frontend dùng mock data
+
+| Công cụ | Yêu cầu hoặc khuyến nghị |
+|---|---|
+| Git | Cần để clone và quản lý phiên bản |
+| Node.js | Khuyến nghị bản LTS được phiên bản Vite của dự án hỗ trợ; sẽ khóa yêu cầu cụ thể khi khởi tạo frontend |
+| npm | Dùng phiên bản đi kèm Node.js tương thích; dependency sẽ được khóa bằng package-lock.json khi có frontend |
+| Trình duyệt | Trình duyệt hiện đại để mở và kiểm tra giao diện |
+| IDE/editor | VS Code hoặc IDE hỗ trợ TypeScript và React |
+
+Frontend dự kiến dùng React + TypeScript + Vite và dữ liệu giả lập. Chạy mock frontend không yêu cầu Java, PostgreSQL, Kafka hoặc Docker.
+
+## Backend và hạ tầng tương lai
+
+| Công cụ | Vai trò dự kiến |
+|---|---|
+| JDK 21 | Target Java cho hai Spring Boot services |
+| Maven | Build và kiểm thử Backend; hướng dẫn hoặc wrapper được bổ sung khi có service |
+| PostgreSQL | Database nghiệp vụ và database monitoring tách biệt |
+| Kafka | Truyền event bất đồng bộ trong giai đoạn Backend |
+| Docker với Compose | Khởi chạy hạ tầng local khi cấu hình được bổ sung |
+
+Không cần cài toàn bộ hạ tầng Backend để chuẩn bị frontend mock. Chưa có phiên bản Spring Boot, database hoặc broker được khóa trong source hiện tại.
+
+## Tự kiểm tra máy phát triển
+
+Mở terminal và chạy các lệnh tương ứng với giai đoạn đang làm:
+
+```sh
+git --version
+node -v
+npm -v
+java -version
+docker --version
+docker compose version
+```
+
+Với Backend dùng Maven cài sẵn, kiểm tra thêm `mvn -v` và Java runtime Maven đang sử dụng. IDE và terminal cần chọn đúng JDK 21 khi bắt đầu phát triển Backend.
+
+Khi source frontend được khởi tạo, xem yêu cầu phiên bản và lệnh cài đặt/chạy trong README của frontend; không suy ra khả năng tương thích chỉ từ việc máy đã có Node.js.
