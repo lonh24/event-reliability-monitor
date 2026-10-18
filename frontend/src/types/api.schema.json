@@ -1,0 +1,2482 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:erm:api-contract:v1",
+  "title": "ERM API DTO schemas",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "description": "ID string opaque; không hoán đổi observation ID và logical event ID.",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "UtcTimestamp": {
+      "type": "string",
+      "description": "ISO 8601 UTC với hậu tố Z; null chỉ khi schema cho phép.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]{1,3})?Z$"
+    },
+    "NonNegativeInt64String": {
+      "type": "string",
+      "description": "Số nguyên decimal 0..9223372036854775807; không dấu +, số mũ hoặc leading zero.",
+      "pattern": "^(0|[1-9][0-9]{0,18})$"
+    },
+    "PositiveInt64String": {
+      "type": "string",
+      "description": "Số nguyên decimal 1..9223372036854775807; kiểm giới hạn Int64 bằng semantic validation.",
+      "pattern": "^[1-9][0-9]{0,18}$"
+    },
+    "ObservationStatus": {
+      "type": "string",
+      "enum": [
+        "REPORTED_ONLY",
+        "OBSERVED"
+      ],
+      "description": ""
+    },
+    "ProcessingStatus": {
+      "type": "string",
+      "enum": [
+        "CONFIRMED",
+        "FAILED",
+        "PENDING",
+        "UNKNOWN"
+      ],
+      "description": ""
+    },
+    "ProcessingReportStatus": {
+      "type": "string",
+      "enum": [
+        "STARTED",
+        "SUCCEEDED",
+        "FAILED"
+      ],
+      "description": ""
+    },
+    "ProcessingAttemptStatus": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "SUCCEEDED",
+        "FAILED",
+        "CONFLICTED"
+      ],
+      "description": ""
+    },
+    "RuleOutcome": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "VIOLATION",
+        "UNKNOWN"
+      ],
+      "description": ""
+    },
+    "IncidentStatus": {
+      "type": "string",
+      "enum": [
+        "OPEN",
+        "INVESTIGATING",
+        "RESOLVED"
+      ],
+      "description": ""
+    },
+    "RuleType": {
+      "type": "string",
+      "enum": [
+        "TIMEOUT",
+        "DUPLICATE_BUSINESS_EFFECT",
+        "DATA_INVARIANT"
+      ],
+      "description": ""
+    },
+    "EvidenceCoverage": {
+      "type": "string",
+      "enum": [
+        "COMPLETE",
+        "PARTIAL",
+        "NONE"
+      ],
+      "description": ""
+    },
+    "EvidenceTrust": {
+      "type": "string",
+      "enum": [
+        "TRUSTED",
+        "UNTRUSTED",
+        "CONFLICTED"
+      ],
+      "description": ""
+    },
+    "EvidenceFinality": {
+      "type": "string",
+      "enum": [
+        "FINAL",
+        "OPEN",
+        "UNKNOWN"
+      ],
+      "description": ""
+    },
+    "ApplicationResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string",
+          "description": "Tên hiển thị đã trim.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "SANDBOX",
+            "DEVELOPMENT"
+          ],
+          "description": ""
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "INACTIVE"
+          ],
+          "description": "Trạng thái cấu hình, không phải connectivity health."
+        },
+        "createdAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "environment",
+        "status",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "CreateApplicationRequest": {
+      "type": "object",
+      "description": "Không có credential/URL/connection string fields.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Trim; không rỗng.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "SANDBOX",
+            "DEVELOPMENT"
+          ],
+          "description": ""
+        }
+      },
+      "required": [
+        "name",
+        "environment"
+      ],
+      "additionalProperties": false
+    },
+    "TimeoutRuleConfig": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "thresholdSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400,
+          "description": "Ngưỡng giây; seed=60."
+        },
+        "completionBasis": {
+          "const": "FIRST_TRUSTED_SUCCESS"
+        }
+      },
+      "required": [
+        "thresholdSeconds",
+        "completionBasis"
+      ],
+      "additionalProperties": false
+    },
+    "DuplicateRuleConfig": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "maxEffects": {
+          "const": 1
+        },
+        "sourcePolicy": {
+          "const": "EVENT_BOUND_SOURCE"
+        }
+      },
+      "required": [
+        "maxEffects",
+        "sourcePolicy"
+      ],
+      "additionalProperties": false
+    },
+    "InvariantRuleConfig": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "expectedSource": {
+          "const": "ORDER_EXPECTATION"
+        },
+        "comparison": {
+          "const": "TOTAL_DELTA_EQUALS_EXPECTED"
+        }
+      },
+      "required": [
+        "expectedSource",
+        "comparison"
+      ],
+      "additionalProperties": false
+    },
+    "MonitoringRuleResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationId": {
+          "$ref": "#/$defs/Id"
+        },
+        "ruleType": {
+          "$ref": "#/$defs/RuleType"
+        },
+        "name": {
+          "type": "string",
+          "description": "Tên hiển thị.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "description": {
+          "type": "string",
+          "description": "Mô tả an toàn; có thể rỗng.",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "config": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimeoutRuleConfig"
+            },
+            {
+              "$ref": "#/$defs/DuplicateRuleConfig"
+            },
+            {
+              "$ref": "#/$defs/InvariantRuleConfig"
+            }
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "configVersion": {
+          "$ref": "#/$defs/PositiveInt64String"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "relatedEventIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "relatedIncidentIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 0,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "id",
+        "applicationId",
+        "ruleType",
+        "name",
+        "description",
+        "config",
+        "enabled",
+        "configVersion",
+        "updatedAt",
+        "relatedEventIds",
+        "relatedIncidentIds"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "TIMEOUT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "$ref": "#/$defs/TimeoutRuleConfig"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "DUPLICATE_BUSINESS_EFFECT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "$ref": "#/$defs/DuplicateRuleConfig"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "DATA_INVARIANT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "$ref": "#/$defs/InvariantRuleConfig"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CreateRuleRequest": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "applicationId": {
+          "$ref": "#/$defs/Id"
+        },
+        "ruleType": {
+          "$ref": "#/$defs/RuleType"
+        },
+        "name": {
+          "type": "string",
+          "description": "Tên hiển thị.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "description": {
+          "type": "string",
+          "description": "Mô tả an toàn; có thể rỗng.",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "config": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimeoutRuleConfig"
+            },
+            {
+              "$ref": "#/$defs/DuplicateRuleConfig"
+            },
+            {
+              "$ref": "#/$defs/InvariantRuleConfig"
+            }
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "applicationId",
+        "ruleType",
+        "name",
+        "config"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "TIMEOUT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "$ref": "#/$defs/TimeoutRuleConfig"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "DUPLICATE_BUSINESS_EFFECT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "$ref": "#/$defs/DuplicateRuleConfig"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "DATA_INVARIANT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "$ref": "#/$defs/InvariantRuleConfig"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "UpdateRuleRequest": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "RuleResultSummaryResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "evaluationId": {
+          "$ref": "#/$defs/Id"
+        },
+        "ruleId": {
+          "$ref": "#/$defs/Id"
+        },
+        "ruleType": {
+          "$ref": "#/$defs/RuleType"
+        },
+        "outcome": {
+          "$ref": "#/$defs/RuleOutcome"
+        },
+        "reasonCode": {
+          "type": "string",
+          "description": "Code lý do ổn định.",
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+        },
+        "evaluatedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        }
+      },
+      "required": [
+        "evaluationId",
+        "ruleId",
+        "ruleType",
+        "outcome",
+        "reasonCode",
+        "evaluatedAt"
+      ],
+      "additionalProperties": false
+    },
+    "EventSummaryResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "eventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationId": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationName": {
+          "type": "string",
+          "description": "Nhãn app từ projection.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "eventType": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "ORDER_PAID"
+              ],
+              "description": ""
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlationId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurredAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observationStatus": {
+          "$ref": "#/$defs/ObservationStatus"
+        },
+        "processingStatus": {
+          "$ref": "#/$defs/ProcessingStatus"
+        },
+        "processingStatusReason": {
+          "type": "string",
+          "description": "Giải thích theo các reports nhìn thấy.",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "reportedAttemptCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "Đếm unique attempts có report; không phải tổng actual attempts."
+        },
+        "hasReportConflict": {
+          "type": "boolean"
+        },
+        "evaluationState": {
+          "type": "string",
+          "enum": [
+            "CURRENT",
+            "PENDING",
+            "NOT_EVALUATED"
+          ],
+          "description": "Trạng thái queued generation, không phải business outcome."
+        },
+        "ruleResults": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuleResultSummaryResponse"
+          },
+          "minItems": 0
+        },
+        "relatedIncidentId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "eventId",
+        "applicationId",
+        "applicationName",
+        "eventType",
+        "correlationId",
+        "occurredAt",
+        "observationStatus",
+        "processingStatus",
+        "processingStatusReason",
+        "reportedAttemptCount",
+        "hasReportConflict",
+        "evaluationState",
+        "ruleResults",
+        "relatedIncidentId"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "observationStatus": {
+                "const": "OBSERVED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "eventType": {
+                "type": "string",
+                "enum": [
+                  "ORDER_PAID"
+                ],
+                "description": ""
+              },
+              "correlationId": {
+                "$ref": "#/$defs/Id"
+              },
+              "occurredAt": {
+                "$ref": "#/$defs/UtcTimestamp"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "hasReportConflict": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "processingStatus": {
+                "const": "UNKNOWN"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ProcessingReportResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "attemptId": {
+          "$ref": "#/$defs/Id"
+        },
+        "producerReportId": {
+          "$ref": "#/$defs/Id"
+        },
+        "reportedStatus": {
+          "$ref": "#/$defs/ProcessingReportStatus"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finishedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reportedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "receivedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "errorCode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "Error code masked, không stack trace/secret.",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "attemptId",
+        "producerReportId",
+        "reportedStatus",
+        "startedAt",
+        "finishedAt",
+        "reportedAt",
+        "receivedAt",
+        "errorCode"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "reportedStatus": {
+                "const": "STARTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "finishedAt": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ProcessingAttemptResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "producerAttemptId": {
+          "$ref": "#/$defs/Id"
+        },
+        "attemptNo": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/ProcessingAttemptStatus"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finishedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reportIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 1
+        },
+        "hasTerminalConflict": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "producerAttemptId",
+        "attemptNo",
+        "status",
+        "startedAt",
+        "finishedAt",
+        "reportIds",
+        "hasTerminalConflict"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "CONFLICTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "hasTerminalConflict": {
+                "const": true
+              },
+              "finishedAt": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "hasTerminalConflict": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EvidenceGapResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Code gap ổn định.",
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+        },
+        "message": {
+          "type": "string",
+          "description": "Giải thích thiếu dữ liệu.",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "missingFields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Tên field/nguồn còn thiếu.",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "\\S"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "missingFields"
+      ],
+      "additionalProperties": false
+    },
+    "BusinessEffectResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "eventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "customerRef": {
+          "$ref": "#/$defs/Id"
+        },
+        "delta": {
+          "$ref": "#/$defs/PositiveInt64String"
+        },
+        "createdAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "eventId",
+        "customerRef",
+        "delta",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceScopeResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "eventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "customerRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "runId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "eventId",
+        "customerRef",
+        "runId"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerSnapshotResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "expectedPoints": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PositiveInt64String"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effectCount": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991,
+              "description": "Exact toàn scope chỉ khi đủ căn cứ; null nếu chưa biết."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "totalDelta": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeInt64String"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BusinessEffectResponse"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "expectedPoints",
+        "effectCount",
+        "totalDelta",
+        "effects"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "observedEventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "LEDGER_SNAPSHOT",
+            "REPORT_BATCH",
+            "GAP",
+            "CORRELATION_CONFLICT"
+          ],
+          "description": ""
+        },
+        "sourceKey": {
+          "type": "string",
+          "description": "Allowlisted source, không SQL/URL.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "sourceLabel": {
+          "type": "string",
+          "description": "Nguồn hiển thị; có nhãn injected khi sandbox.",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "scope": {
+          "$ref": "#/$defs/EvidenceScopeResponse"
+        },
+        "coverage": {
+          "$ref": "#/$defs/EvidenceCoverage"
+        },
+        "trust": {
+          "$ref": "#/$defs/EvidenceTrust"
+        },
+        "finality": {
+          "$ref": "#/$defs/EvidenceFinality"
+        },
+        "snapshotAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "collectedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "supersedesEvidenceId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ledger": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LedgerSnapshotResponse"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reportIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 0
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceGapResponse"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "id",
+        "observedEventId",
+        "kind",
+        "sourceKey",
+        "sourceLabel",
+        "scope",
+        "coverage",
+        "trust",
+        "finality",
+        "snapshotAt",
+        "collectedAt",
+        "supersedesEvidenceId",
+        "ledger",
+        "reportIds",
+        "gaps"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "LEDGER_SNAPSHOT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "ledger": {
+                "$ref": "#/$defs/LedgerSnapshotResponse"
+              },
+              "reportIds": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "REPORT_BATCH"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "ledger": {
+                "type": "null"
+              },
+              "reportIds": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "GAP",
+                  "CORRELATION_CONFLICT"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "ledger": {
+                "type": "null"
+              },
+              "gaps": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "LEDGER_SNAPSHOT"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "if": {
+              "properties": {
+                "coverage": {
+                  "const": "COMPLETE"
+                },
+                "trust": {
+                  "const": "TRUSTED"
+                },
+                "finality": {
+                  "const": "FINAL"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "ledger": {
+                  "properties": {
+                    "effectCount": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": ""
+                    },
+                    "totalDelta": {
+                      "$ref": "#/$defs/NonNegativeInt64String"
+                    }
+                  }
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "ledger": {
+                  "properties": {
+                    "effectCount": {
+                      "type": "null"
+                    },
+                    "totalDelta": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RuleEvaluationResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "observedEventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "ruleId": {
+          "$ref": "#/$defs/Id"
+        },
+        "ruleType": {
+          "$ref": "#/$defs/RuleType"
+        },
+        "ruleVersion": {
+          "$ref": "#/$defs/PositiveInt64String"
+        },
+        "configSnapshot": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimeoutRuleConfig"
+            },
+            {
+              "$ref": "#/$defs/DuplicateRuleConfig"
+            },
+            {
+              "$ref": "#/$defs/InvariantRuleConfig"
+            }
+          ]
+        },
+        "inputGeneration": {
+          "$ref": "#/$defs/PositiveInt64String"
+        },
+        "outcome": {
+          "$ref": "#/$defs/RuleOutcome"
+        },
+        "reasonCode": {
+          "type": "string",
+          "description": "",
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Lý do cho cả PASS/VIOLATION/UNKNOWN.",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        },
+        "evaluatedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "isLatest": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "observedEventId",
+        "ruleId",
+        "ruleType",
+        "ruleVersion",
+        "configSnapshot",
+        "inputGeneration",
+        "outcome",
+        "reasonCode",
+        "reason",
+        "evaluatedAt",
+        "evidenceIds",
+        "isLatest"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "TIMEOUT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "configSnapshot": {
+                "$ref": "#/$defs/TimeoutRuleConfig"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "DUPLICATE_BUSINESS_EFFECT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "configSnapshot": {
+                "$ref": "#/$defs/DuplicateRuleConfig"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ruleType": {
+                "const": "DATA_INVARIANT"
+              }
+            },
+            "required": [
+              "ruleType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "configSnapshot": {
+                "$ref": "#/$defs/InvariantRuleConfig"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EventDetailResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "eventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationId": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationName": {
+          "type": "string",
+          "description": "Nhãn app từ projection.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "eventType": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "ORDER_PAID"
+              ],
+              "description": ""
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlationId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurredAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observationStatus": {
+          "$ref": "#/$defs/ObservationStatus"
+        },
+        "processingStatus": {
+          "$ref": "#/$defs/ProcessingStatus"
+        },
+        "processingStatusReason": {
+          "type": "string",
+          "description": "Giải thích theo các reports nhìn thấy.",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "reportedAttemptCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "Đếm unique attempts có report; không phải tổng actual attempts."
+        },
+        "hasReportConflict": {
+          "type": "boolean"
+        },
+        "evaluationState": {
+          "type": "string",
+          "enum": [
+            "CURRENT",
+            "PENDING",
+            "NOT_EVALUATED"
+          ],
+          "description": "Trạng thái queued generation, không phải business outcome."
+        },
+        "ruleResults": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuleResultSummaryResponse"
+          },
+          "minItems": 0
+        },
+        "relatedIncidentId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "customerRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expectedPoints": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PositiveInt64String"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidenceSourceKey": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "Validated source key.",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "firstSeenAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "evaluationGeneration": {
+          "$ref": "#/$defs/PositiveInt64String"
+        },
+        "evaluatedGeneration": {
+          "$ref": "#/$defs/NonNegativeInt64String"
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProcessingAttemptResponse"
+          },
+          "minItems": 0
+        },
+        "reports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProcessingReportResponse"
+          },
+          "minItems": 0
+        },
+        "evaluations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuleEvaluationResponse"
+          },
+          "minItems": 0
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceResponse"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "id",
+        "eventId",
+        "applicationId",
+        "applicationName",
+        "eventType",
+        "correlationId",
+        "occurredAt",
+        "observationStatus",
+        "processingStatus",
+        "processingStatusReason",
+        "reportedAttemptCount",
+        "hasReportConflict",
+        "evaluationState",
+        "ruleResults",
+        "relatedIncidentId",
+        "customerRef",
+        "expectedPoints",
+        "evidenceSourceKey",
+        "firstSeenAt",
+        "evaluationGeneration",
+        "evaluatedGeneration",
+        "attempts",
+        "reports",
+        "evaluations",
+        "evidence"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "observationStatus": {
+                "const": "OBSERVED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "eventType": {
+                "type": "string",
+                "enum": [
+                  "ORDER_PAID"
+                ],
+                "description": ""
+              },
+              "correlationId": {
+                "$ref": "#/$defs/Id"
+              },
+              "occurredAt": {
+                "$ref": "#/$defs/UtcTimestamp"
+              },
+              "customerRef": {
+                "$ref": "#/$defs/Id"
+              },
+              "expectedPoints": {
+                "$ref": "#/$defs/PositiveInt64String"
+              },
+              "evidenceSourceKey": {
+                "type": "string",
+                "description": "",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "\\S"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "hasReportConflict": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "processingStatus": {
+                "const": "UNKNOWN"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RuleReferenceResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "ruleType": {
+          "$ref": "#/$defs/RuleType"
+        },
+        "name": {
+          "type": "string",
+          "description": "Tên rule hiển thị.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "id",
+        "ruleType",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "IncidentSummaryResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationId": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationName": {
+          "type": "string",
+          "description": "",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "observedEventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "eventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "primaryRule": {
+          "$ref": "#/$defs/RuleReferenceResponse"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "MEDIUM",
+            "HIGH"
+          ],
+          "description": ""
+        },
+        "status": {
+          "$ref": "#/$defs/IncidentStatus"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Mô tả hồ sơ, không kết luận repair.",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        },
+        "openedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "resolvedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/NonNegativeInt64String"
+        }
+      },
+      "required": [
+        "id",
+        "applicationId",
+        "applicationName",
+        "observedEventId",
+        "eventId",
+        "primaryRule",
+        "severity",
+        "status",
+        "summary",
+        "openedAt",
+        "resolvedAt",
+        "version"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "RESOLVED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "resolvedAt": {
+                "$ref": "#/$defs/UtcTimestamp"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "resolvedAt": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "IncidentHistoryResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "CREATED",
+            "STATUS_CHANGED",
+            "EVIDENCE_ADDED",
+            "SEVERITY_RAISED"
+          ],
+          "description": ""
+        },
+        "fromStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IncidentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "toStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IncidentStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actorRef": {
+          "type": "string",
+          "description": "Label system/local developer, không credential.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "note": {
+          "type": "string",
+          "description": "",
+          "minLength": 0,
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        }
+      },
+      "required": [
+        "id",
+        "action",
+        "fromStatus",
+        "toStatus",
+        "actorRef",
+        "note",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "IncidentDetailResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationId": {
+          "$ref": "#/$defs/Id"
+        },
+        "applicationName": {
+          "type": "string",
+          "description": "",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "observedEventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "eventId": {
+          "$ref": "#/$defs/Id"
+        },
+        "primaryRule": {
+          "$ref": "#/$defs/RuleReferenceResponse"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "MEDIUM",
+            "HIGH"
+          ],
+          "description": ""
+        },
+        "status": {
+          "$ref": "#/$defs/IncidentStatus"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Mô tả hồ sơ, không kết luận repair.",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        },
+        "openedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "resolvedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/NonNegativeInt64String"
+        },
+        "explanation": {
+          "type": "string",
+          "description": "",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "linkedEvent": {
+          "$ref": "#/$defs/EventSummaryResponse"
+        },
+        "linkedEvaluations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuleEvaluationResponse"
+          },
+          "minItems": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceResponse"
+          },
+          "minItems": 1
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IncidentHistoryResponse"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "applicationId",
+        "applicationName",
+        "observedEventId",
+        "eventId",
+        "primaryRule",
+        "severity",
+        "status",
+        "summary",
+        "openedAt",
+        "resolvedAt",
+        "version",
+        "explanation",
+        "updatedAt",
+        "linkedEvent",
+        "linkedEvaluations",
+        "evidence",
+        "history"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "RESOLVED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "resolvedAt": {
+                "$ref": "#/$defs/UtcTimestamp"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "resolvedAt": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "UpdateIncidentStatusRequest": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/IncidentStatus"
+        },
+        "expectedVersion": {
+          "$ref": "#/$defs/NonNegativeInt64String"
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional note; không chứa secret.",
+          "minLength": 0,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "status",
+        "expectedVersion"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewStatsResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "observedEvents": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "confirmedProcessing": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "openIncidents": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "unknownEvaluations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        }
+      },
+      "required": [
+        "observedEvents",
+        "confirmedProcessing",
+        "openIncidents",
+        "unknownEvaluations"
+      ],
+      "additionalProperties": false
+    },
+    "EventVolumeBucketResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "startAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "endAt": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "partial": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "startAt",
+        "endAt",
+        "count",
+        "partial"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "range": {
+          "type": "string",
+          "enum": [
+            "1h",
+            "24h",
+            "7d"
+          ],
+          "description": ""
+        },
+        "bucket": {
+          "type": "string",
+          "enum": [
+            "hour",
+            "day"
+          ],
+          "description": ""
+        },
+        "applicationId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "asOf": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "windowStart": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "windowEnd": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "stats": {
+          "$ref": "#/$defs/OverviewStatsResponse"
+        },
+        "volumeBuckets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EventVolumeBucketResponse"
+          },
+          "minItems": 0
+        },
+        "latestIncidents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IncidentSummaryResponse"
+          },
+          "minItems": 0,
+          "maxItems": 5
+        }
+      },
+      "required": [
+        "range",
+        "bucket",
+        "applicationId",
+        "asOf",
+        "windowStart",
+        "windowEnd",
+        "stats",
+        "volumeBuckets",
+        "latestIncidents"
+      ],
+      "additionalProperties": false
+    },
+    "PageResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "totalItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        }
+      },
+      "required": [
+        "items",
+        "page",
+        "size",
+        "totalItems",
+        "totalPages"
+      ],
+      "additionalProperties": false
+    },
+    "ApplicationPageResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ApplicationResponse"
+          },
+          "minItems": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "totalItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        }
+      },
+      "required": [
+        "items",
+        "page",
+        "size",
+        "totalItems",
+        "totalPages"
+      ],
+      "additionalProperties": false
+    },
+    "EventPageResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EventSummaryResponse"
+          },
+          "minItems": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "totalItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        }
+      },
+      "required": [
+        "items",
+        "page",
+        "size",
+        "totalItems",
+        "totalPages"
+      ],
+      "additionalProperties": false
+    },
+    "RulePageResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MonitoringRuleResponse"
+          },
+          "minItems": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "totalItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        }
+      },
+      "required": [
+        "items",
+        "page",
+        "size",
+        "totalItems",
+        "totalPages"
+      ],
+      "additionalProperties": false
+    },
+    "IncidentPageResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IncidentSummaryResponse"
+          },
+          "minItems": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "totalItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": ""
+        }
+      },
+      "required": [
+        "items",
+        "page",
+        "size",
+        "totalItems",
+        "totalPages"
+      ],
+      "additionalProperties": false
+    },
+    "FieldErrorResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Field/query path.",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "code": {
+          "type": "string",
+          "description": "Validation code.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "\\S"
+        },
+        "message": {
+          "type": "string",
+          "description": "Safe explanation; không echo secret.",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "field",
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "ApiErrorResponse": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "MALFORMED_JSON",
+            "INVALID_QUERY",
+            "VALIDATION_ERROR",
+            "UNAUTHENTICATED",
+            "FORBIDDEN",
+            "RESOURCE_NOT_FOUND",
+            "VERSION_CONFLICT",
+            "INVALID_STATE_TRANSITION",
+            "REPORT_PAYLOAD_CONFLICT",
+            "IDENTITY_CONFLICT",
+            "METHOD_NOT_ALLOWED",
+            "UNSUPPORTED_MEDIA_TYPE",
+            "INTERNAL_ERROR",
+            "SERVICE_UNAVAILABLE"
+          ],
+          "description": ""
+        },
+        "message": {
+          "type": "string",
+          "description": "",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "requestId": {
+          "$ref": "#/$defs/Id"
+        },
+        "fieldErrors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldErrorResponse"
+          },
+          "minItems": 0
+        },
+        "currentVersion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonNegativeInt64String"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "requestId",
+        "fieldErrors",
+        "currentVersion"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

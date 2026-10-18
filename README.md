@@ -6,7 +6,7 @@ Ví dụ mục tiêu: sự kiện `OrderPaid` có thể được giao lại nhi�
 
 ## Trạng thái hiện tại
 
-Repository đang ở giai đoạn thiết kế. Các tài liệu phạm vi, yêu cầu, kiến trúc, mô hình dữ liệu, API Contract, Mock Data Specification và Architecture Decision Records đã được xây dựng. Chưa triển khai frontend, backend, Kafka hoặc PostgreSQL runtime; các thư mục ứng dụng và hạ tầng hiện vẫn là placeholder.
+Các tài liệu phạm vi, yêu cầu, kiến trúc, mô hình dữ liệu, API Contract, Mock Data Specification và Architecture Decision Records đã được xây dựng. Frontend có layout Dark Emerald, tám routes, typed DTOs, deterministic mock data và Mock/HTTP adapters. Các trang vẫn là placeholders, chưa nối với lớp dữ liệu. Backend, Kafka và PostgreSQL runtime chưa được triển khai.
 
 ## Cấu trúc
 
@@ -23,14 +23,15 @@ Repository đang ở giai đoạn thiết kế. Các tài liệu phạm vi, yêu
 | [docs/07-mock-data-spec.md](docs/07-mock-data-spec.md) | Đặc tả dữ liệu mẫu và hành vi mock adapter |
 | [docs/08-decisions.md](docs/08-decisions.md) | Bản ghi quyết định kiến trúc (ADR) |
 | [docs/environment.md](docs/environment.md) | Yêu cầu môi trường phát triển |
+| [frontend/](frontend/README.md) | Dashboard React và lớp dữ liệu có kiểu; giao diện đang là placeholder |
 | [demo-service/](demo-service/README.md) | Placeholder cho ứng dụng order/loyalty và xử lý event |
 | [monitor-service/](monitor-service/README.md) | Placeholder cho quan sát event, rules và incidents |
 | [infrastructure/](infrastructure/README.md) | Placeholder cho cấu hình hạ tầng |
 
 ## Bắt đầu
 
-Đọc [yêu cầu môi trường](docs/environment.md). Hiện chưa có ứng dụng hoặc lệnh khởi chạy; hướng dẫn sẽ được bổ sung khi các thành phần được triển khai.
+Đọc [yêu cầu môi trường](docs/environment.md) và [hướng dẫn frontend](frontend/README.md). Chạy `cd frontend`, `npm ci`, `npm run dev` để xem giao diện. Chạy `npm test` để kiểm lớp dữ liệu mock; không cần Backend hoặc Kafka.
 
 ## Phạm vi
 
-Giao diện dự kiến sử dụng React + TypeScript + Vite, trước mắt làm việc với dữ liệu mô phỏng. Kiến trúc backend mục tiêu sử dụng Spring Boot với Java 21, Apache Kafka và PostgreSQL để xử lý, quan sát và đánh giá sự kiện bất đồng bộ. ERM không tự sửa dữ liệu hoặc replay event trên production.
+Giao diện sử dụng React + TypeScript + Vite; Mock Adapter có thể hoạt động độc lập với Backend. HTTP Adapter đã có hợp đồng và xử lý transport, chưa được tích hợp với Spring Boot runtime. Kiến trúc backend mục tiêu sử dụng Spring Boot với Java 21, Apache Kafka và PostgreSQL để xử lý, quan sát và đánh giá sự kiện bất đồng bộ. ERM không tự sửa dữ liệu hoặc replay event trên production.
