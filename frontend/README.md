@@ -1,6 +1,6 @@
 # ERM Dashboard
 
-React + TypeScript + Vite dashboard with a Dark Emerald application shell and a typed data layer. Overview, Event Explorer and Event Detail read through MonitorApi. The other pages remain scaffold placeholders. Unavailable metrics use a dash rather than zero; a missing event returns a distinct Event Not Found state. There is no live monitoring or Backend runtime.
+React + TypeScript + Vite dashboard with a Dark Emerald application shell and a typed data layer. Overview, Event Explorer, Event Detail and both incident pages read through MonitorApi. Applications and Rules remain scaffold placeholders. Unavailable metrics use a dash rather than zero; a missing event returns a distinct Event Not Found state. There is no live monitoring or Backend runtime.
 
 ## Requirements and commands
 
@@ -36,7 +36,7 @@ VITE_API_BASE_URL=/api/v1
 
 Restart Vite after changing environment values. `mock` uses one in-memory adapter instance exported as `monitorApi` from `src/services/index.ts`; it performs no HTTP calls. `http` selects the real fetch adapter for all eleven Dashboard operations. Unsupported modes fail explicitly. Every `VITE_*` value is client-visible; never put secrets or internal service tokens there.
 
-HTTP mode implements method/path/query/body serialization, validated responses, structured API errors and AbortSignal handling. It has been exercised with HTTP response doubles; integration with a real Spring Boot Backend is pending. `/api/v1` is appended only once. A relative base uses the frontend origin and needs a server/reverse proxy that handles that path. A separately hosted API can use an absolute HTTP(S) base ending in `/api/v1`, with suitable server-side CORS. No proxy or Backend is started by this project. The three connected pages use the selected adapter in both modes. The remaining scaffold pages do not make requests yet.
+HTTP mode implements method/path/query/body serialization, validated responses, structured API errors and AbortSignal handling. It has been exercised with HTTP response doubles; integration with a real Spring Boot Backend is pending. `/api/v1` is appended only once. A relative base uses the frontend origin and needs a server/reverse proxy that handles that path. A separately hosted API can use an absolute HTTP(S) base ending in `/api/v1`, with suitable server-side CORS. No proxy or Backend is started by this project. The five connected pages use the selected adapter in both modes. The remaining scaffold pages do not make requests yet.
 
 Consumers will call the shared abstraction instead of importing fixtures:
 
@@ -101,9 +101,9 @@ Overview uses the API snapshot (default 24h/hour), four cards, a responsive Rech
 
 Event Explorer searches logical eventId (trimmed, case-insensitive, up to 128 characters), combines application/processing filters with AND and uses server-style pagination (ten records per page, zero-based in the API). Changing conditions resets to the first page. Clear filters restores defaults. Filter choices load all application pages. Loading replaces prior-query records; cancelled or stale responses cannot overwrite a newer query. Retry retains the query. If a page becomes invalid after a dataset change, the UI fetches a valid page using response metadata.
 
-Event Detail uses the observed-record ID in its URL. It shows metadata, reported attempts and original reports, conflicts, latest versus historical evaluations, evidence references and read-only ledger snapshots. Null values remain unknown/unavailable; no attempts or effects are inferred from missing reports. Source, coverage, trust, finality, gaps, masked customer references and sandbox injected-ledger labels are visible. Evidence is one anchor away. Incident links lead to the existing scaffold; the incident workflow is not implemented yet.
+Event Detail uses the observed-record ID in its URL. It shows metadata, reported attempts and original reports, conflicts, latest versus historical evaluations, evidence references and read-only ledger snapshots. Null values remain unknown/unavailable; no attempts or effects are inferred from missing reports. Source, coverage, trust, finality, gaps, masked customer references and sandbox injected-ledger labels are visible. Evidence is one anchor away. Incident links open the investigation detail and status workflow.
 
-Applications create, Rules toggle, Incidents list/detail investigation and status transitions remain outside the current UI. Loading/empty/error/not-found states are distinct. No live Backend, Kafka or database is started.
+Applications create and Rules toggle remain outside the current UI. Loading/empty/error/not-found states are distinct. No live Backend, Kafka or database is started.
 
 ## Reproducible UI checks
 
@@ -120,3 +120,26 @@ After a fresh npm ci, reinstall that optional tool if needed. npm run test:ui st
 For manual fault checks, run npm run dev and open `/tests/ui/harness.html?page=overview&mode=slow`. Use page=overview|events|detail and mode=slow|empty|error; detail also accepts id=evt-005. The error mode fails once: Retry recovers. mode=app-error on Events isolates an application-filter failure. mode=race simulates an old search response arriving late. This test entry is not a production build input and uses its own mock instance; it never changes the main dashboard singleton.
 
 A manual check takes about five minutes: verify the four Overview values and chart; search ORDER-PAID-1003; combine app/status filters and clear; switch Events pages; inspect evt-002 through evt-005; follow an evidence link; open /events/missing-id; then use the isolated empty/error/slow modes. Check a narrow viewport as well.
+
+## Incident investigation
+
+Incidents uses `listIncidents` with status/severity filters combined by AND, sorted by openedAt descending. The demo uses two records per page to make pagination visible on five cases. Changing filters resets page 0; clear restores defaults. Requests are cancelled/guarded against stale responses, Retry retains filters and an invalidated page triggers a valid-page request. Free-text incident search is not part of the API contract.
+
+Incident Detail reads the aggregate DTO from `getIncidentDetail`: primary rule, linked event, linked persisted evaluations, read-only evidence and ordered server history. Event links use observedEventId, never logical eventId. Case assessments are not relabelled as current business truth after resolution. Evidence report references open Event Detail instead of pointing to a report anchor absent from Incident Detail.
+
+The status form offers only OPEN → INVESTIGATING → RESOLVED. An optional trimmed note (up to 500 characters) is saved with the change. The page submits its loaded version string as expectedVersion and adopts the API response for status, revision, resolvedAt and history. While saving it prevents double submission; it never increments revision or invents history locally.
+
+Every mutation failure requires an explicit Reload detail before another write. VERSION_CONFLICT and INVALID_STATE_TRANSITION have separate messages. If a network/protocol error hides the result of a committed PATCH, the UI states that the outcome is uncertain and reads the latest detail before a person chooses the next action. It never automatically retries a PATCH with a new version. Navigating away may leave an in-flight write to finish; returning to the case reads its actual state.
+
+Resolving inc-001 changes open incidents 3 → 3 → 2 across its two transitions. It preserves evt-003, both injected ledger effects (+200) and linked VIOLATION assessments. Navigating between pages shares the adapter session; a full browser reload restores the initial mock snapshot. This is not durable or cross-tab storage, a real database transaction or Spring Boot concurrency verification.
+
+To run incident browser checks after the optional Playwright setup above:
+
+```bash
+npm run test:ui
+npm run test:ui:incidents
+```
+
+The original runner retains its 4A assertions; the incident runner adds filters/pages, the three-action investigation flow, valid transitions/revisions/history, shared projections, reload reset, real stale-version rejection, pending/double-submit prevention and failure reconciliation. HTTP requests are response doubles rather than a running Backend.
+
+The isolated incident entry is `/tests/ui/incidents-harness.html?page=detail&mode=conflict`. Use page=list|detail, optional id=inc-001, and mode=slow|empty|error. Additional detail modes: mutation-error (one-shot 503), invalid-transition (injected 409 rejection), conflict (another legitimate mutation wins before the stale UI request), lost-ack (a real mock commit occurs before its response is lost). List modes race and page-shrink verify stale responses and invalidated pagination. The harness owns an isolated API instance and never patches the dashboard singleton.

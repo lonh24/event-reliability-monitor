@@ -800,3 +800,20 @@ button:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
   .record-heading .eyebrow { font-size: 9px; }
 }
 .events-panel th, .events-panel td { padding-inline: 12px; }
+
+/* Incident investigation uses the existing dashboard surfaces and controls. */
+.incident-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.incident-summary { font-size: 16px; line-height: 1.6; }
+.incident-explanation { color: var(--text-secondary); font-size: 13px; line-height: 1.8; margin-top: 12px; max-width: 850px; }
+.incident-transition-form { display: grid; gap: 12px; max-width: 650px; }
+.incident-transition-form label { color: var(--text-secondary); font-size: 12px; }
+.incident-transition-form textarea { width: 100%; resize: vertical; min-height: 88px; padding: 12px; font: inherit; font-size: 13px; color: var(--text-primary); background: var(--bg-primary); border: 1px solid var(--control-border); border-radius: var(--radius-sm); }
+.incident-transition-form textarea:disabled { opacity: 0.6; }
+.incident-transition-form button { justify-self: start; }
+.mutation-success { color: var(--success-text); background: #1a3c29; border: 1px solid #43634e; padding: 12px; font-size: 13px; border-radius: var(--radius-sm); margin-bottom: 18px; }
+.mutation-error { padding: 16px; color: var(--text-secondary); border: 1px solid #a75c69; background: #302026; border-radius: var(--radius-sm); margin-bottom: 18px; font-size: 13px; }
+.mutation-error h3 { color: var(--danger-text); font-size: 14px; margin-bottom: 8px; }
+.mutation-error p { margin-bottom: 14px; }
+.incidents-panel th, .incidents-panel td { padding-inline: 12px; }
+.history-note { min-width: 160px; max-width: 400px; overflow-wrap: anywhere; white-space: pre-wrap; }
+#incident-history, #case-evaluations { scroll-margin-top: 18px; }

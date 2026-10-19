@@ -1,10 +1,25 @@
-import { ArrowLeft } from "lucide-react";
+import { useCallback } from "react";
+import { ArrowLeft, FileSearch } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { PageHeader } from "../components/ui/PageHeader";
-import { PlaceholderPanel } from "../components/ui/PlaceholderPanel";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
+import { IncidentInvestigation } from "../components/monitoring/IncidentInvestigation";
+import {
+  isResourceNotFound,
+  requestErrorMessage,
+} from "../components/monitoring/presentation";
+import { useApiResource } from "../hooks/useApiResource";
+import { monitorApi, type MonitorApi } from "../services/index";
 
-export function IncidentDetailPage() {
-  const { id } = useParams<"id">();
+export function IncidentDetailPage({ api = monitorApi }: { api?: MonitorApi }) {
+  const { id = "" } = useParams<"id">();
+  const load = useCallback(
+    (signal: AbortSignal) => api.getIncidentDetail(id, { signal }),
+    [api, id],
+  );
+  const resource = useApiResource(load);
   return (
     <>
       <PageHeader
@@ -17,14 +32,36 @@ export function IncidentDetailPage() {
           </Link>
         }
       />
-      <div className="resource-reference">
-        <span className="eyebrow">Requested incident ID</span>
-        <code>{id}</code>
-      </div>
-      <PlaceholderPanel
-        title="Incident investigation"
-        description="This incident has not been loaded. Its existence cannot be verified until a data source is connected. Status changes are not available yet."
-      />
+      {resource.phase === "loading" && (
+        <LoadingSkeleton variant="detail" label="Loading incident detail" />
+      )}
+      {resource.phase === "error" &&
+        (isResourceNotFound(resource.error) ? (
+          <EmptyState
+            title="Incident Not Found"
+            description={`No incident exists for ID ${id}.`}
+            icon={FileSearch}
+            action={
+              <Link className="button button-secondary" to="/incidents">
+                Return to Incidents
+              </Link>
+            }
+          />
+        ) : (
+          <ErrorState
+            title="Could not load incident detail"
+            description={requestErrorMessage(resource.error)}
+            onRetry={resource.retry}
+          />
+        ))}
+      {resource.phase === "success" && (
+        <IncidentInvestigation
+          key={id}
+          initial={resource.data}
+          api={api}
+          onReload={resource.retry}
+        />
+      )}
     </>
   );
 }

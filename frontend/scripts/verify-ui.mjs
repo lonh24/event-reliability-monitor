@@ -108,7 +108,7 @@ try {
     },
   );
   await check(
-    "Latest incident navigates to existing scaffold, outside 4B",
+    "Latest incident navigates to its detail route",
     async () => {
       await page.getByRole("link", { name: "inc-001", exact: true }).click();
       assert.equal(new URL(page.url()).pathname, "/incidents/inc-001");
@@ -338,7 +338,7 @@ try {
     ["/incidents", "Incidents"],
     ["/incidents/inc-001", "Incident detail"],
   ])
-    await check(`Scaffold preserved at ${path}`, async () => {
+    await check(`Existing route remains accessible at ${path}`, async () => {
       await go(path);
       await page.getByRole("heading", { name: title, exact: true }).waitFor();
     });

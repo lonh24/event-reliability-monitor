@@ -6,7 +6,7 @@ Ví dụ mục tiêu: sự kiện `OrderPaid` có thể được giao lại nhi�
 
 ## Trạng thái hiện tại
 
-Các tài liệu phạm vi, yêu cầu, kiến trúc, mô hình dữ liệu, API Contract, Mock Data Specification và Architecture Decision Records đã được xây dựng. Frontend có layout Dark Emerald, tám routes, typed DTOs, deterministic mock data và Mock/HTTP adapters. Overview, Event Explorer và Event Detail đã nối với lớp dữ liệu qua MonitorApi: có thống kê, biểu đồ UTC, search/filter/phân trang, reported attempts, evaluations và evidence chỉ đọc. Applications, Rules và Incidents còn là scaffold. Backend, Kafka và PostgreSQL runtime chưa được triển khai.
+Các tài liệu phạm vi, yêu cầu, kiến trúc, mô hình dữ liệu, API Contract, Mock Data Specification và Architecture Decision Records đã được xây dựng. Frontend có layout Dark Emerald, tám routes, typed DTOs, deterministic mock data và Mock/HTTP adapters. Overview, Event Explorer và Event Detail đã nối với lớp dữ liệu qua MonitorApi: có thống kê, biểu đồ UTC, search/filter/phân trang, reported attempts, evaluations và evidence chỉ đọc. Incidents List/Detail đã có bộ lọc, phân trang và workflow OPEN → INVESTIGATING → RESOLVED với kiểm tra version/history. Applications và Rules còn là scaffold. Backend, Kafka và PostgreSQL runtime chưa được triển khai.
 
 ## Cấu trúc
 

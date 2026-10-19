@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Activity, FileSearch } from "lucide-react";
 import type {
   EventDetailResponse,
@@ -103,10 +104,12 @@ export function AttemptTimeline({ event }: { event: EventDetailResponse }) {
   );
 }
 
-function EvaluationRecord({
+export function EvaluationRecord({
   evaluation,
+  context = "event",
 }: {
   evaluation: RuleEvaluationResponse;
+  context?: "event" | "incident";
 }) {
   return (
     <article
@@ -132,9 +135,11 @@ function EvaluationRecord({
         {evaluation.ruleVersion} · Input generation {evaluation.inputGeneration}
       </p>
       <p className="context-note">
-        {evaluation.isLatest
-          ? "Latest evaluation"
-          : "Historical evaluation · does not replace the latest result"}
+        {context === "incident"
+          ? `Linked case evaluation · ${evaluation.isLatest ? "also latest for this event" : "historical event assessment"}`
+          : evaluation.isLatest
+            ? "Latest evaluation"
+            : "Historical evaluation · does not replace the latest result"}
       </p>
       <ul className="evidence-links" aria-label="Evidence references">
         {evaluation.evidenceIds.map((id) => (
@@ -204,7 +209,13 @@ export function EvaluationList({
   );
 }
 
-function EvidenceRecord({ evidence }: { evidence: EvidenceResponse }) {
+function EvidenceRecord({
+  evidence,
+  reportLinksToEvent = false,
+}: {
+  evidence: EvidenceResponse;
+  reportLinksToEvent?: boolean;
+}) {
   return (
     <article
       className="evidence-record"
@@ -331,15 +342,25 @@ function EvidenceRecord({ evidence }: { evidence: EvidenceResponse }) {
       {evidence.reportIds.length > 0 && (
         <p className="context-note">
           Report references:{" "}
-          {evidence.reportIds.map((id) => (
-            <a
-              key={id}
-              className="text-link inline-reference"
-              href={`#report-${encodeURIComponent(id)}`}
-            >
-              {id}
-            </a>
-          ))}
+          {evidence.reportIds.map((id) =>
+            reportLinksToEvent ? (
+              <Link
+                key={id}
+                className="text-link inline-reference"
+                to={`/events/${encodeURIComponent(evidence.observedEventId)}`}
+              >
+                {id} (event detail)
+              </Link>
+            ) : (
+              <a
+                key={id}
+                className="text-link inline-reference"
+                href={`#report-${encodeURIComponent(id)}`}
+              >
+                {id}
+              </a>
+            ),
+          )}
           . Report coverage is not proof that all actual attempts are known.
         </p>
       )}
@@ -362,7 +383,13 @@ function EvidenceRecord({ evidence }: { evidence: EvidenceResponse }) {
   );
 }
 
-export function EvidenceList({ evidence }: { evidence: EvidenceResponse[] }) {
+export function EvidenceList({
+  evidence,
+  reportLinksToEvent = false,
+}: {
+  evidence: EvidenceResponse[];
+  reportLinksToEvent?: boolean;
+}) {
   return (
     <section className="panel" id="evidence" aria-labelledby="evidence-title">
       <div className="panel-header">
@@ -376,7 +403,11 @@ export function EvidenceList({ evidence }: { evidence: EvidenceResponse[] }) {
         </p>
         {evidence.length ? (
           evidence.map((record) => (
-            <EvidenceRecord key={record.id} evidence={record} />
+            <EvidenceRecord
+              key={record.id}
+              evidence={record}
+              reportLinksToEvent={reportLinksToEvent}
+            />
           ))
         ) : (
           <EmptyState

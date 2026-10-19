@@ -13,7 +13,11 @@ const EventDetailPage = lazy(() =>
 );
 import { RulesPage } from "../pages/RulesPage";
 import { IncidentsPage } from "../pages/IncidentsPage";
-import { IncidentDetailPage } from "../pages/IncidentDetailPage";
+const IncidentDetailPage = lazy(() =>
+  import("../pages/IncidentDetailPage").then((module) => ({
+    default: module.IncidentDetailPage,
+  })),
+);
 import { NotFoundPage } from "../pages/NotFoundPage";
 
 export function AppRouter() {
@@ -40,7 +44,21 @@ export function AppRouter() {
         />
         <Route path="rules" element={<RulesPage />} />
         <Route path="incidents" element={<IncidentsPage />} />
-        <Route path="incidents/:id" element={<IncidentDetailPage />} />
+        <Route
+          path="incidents/:id"
+          element={
+            <Suspense
+              fallback={
+                <LoadingSkeleton
+                  variant="detail"
+                  label="Loading incident detail screen"
+                />
+              }
+            >
+              <IncidentDetailPage />
+            </Suspense>
+          }
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
