@@ -6,7 +6,7 @@ Ví dụ mục tiêu: sự kiện `OrderPaid` có thể được giao lại nhi�
 
 ## Trạng thái hiện tại
 
-Các tài liệu phạm vi, yêu cầu, kiến trúc, mô hình dữ liệu, API Contract, Mock Data Specification và Architecture Decision Records đã được xây dựng. Frontend có layout Dark Emerald, tám routes, typed DTOs, deterministic mock data và Mock/HTTP adapters. Các trang vẫn là placeholders, chưa nối với lớp dữ liệu. Backend, Kafka và PostgreSQL runtime chưa được triển khai.
+Các tài liệu phạm vi, yêu cầu, kiến trúc, mô hình dữ liệu, API Contract, Mock Data Specification và Architecture Decision Records đã được xây dựng. Frontend có layout Dark Emerald, tám routes, typed DTOs, deterministic mock data và Mock/HTTP adapters. Overview, Event Explorer và Event Detail đã nối với lớp dữ liệu qua MonitorApi: có thống kê, biểu đồ UTC, search/filter/phân trang, reported attempts, evaluations và evidence chỉ đọc. Applications, Rules và Incidents còn là scaffold. Backend, Kafka và PostgreSQL runtime chưa được triển khai.
 
 ## Cấu trúc
 
@@ -23,7 +23,7 @@ Các tài liệu phạm vi, yêu cầu, kiến trúc, mô hình dữ liệu, API
 | [docs/07-mock-data-spec.md](docs/07-mock-data-spec.md) | Đặc tả dữ liệu mẫu và hành vi mock adapter |
 | [docs/08-decisions.md](docs/08-decisions.md) | Bản ghi quyết định kiến trúc (ADR) |
 | [docs/environment.md](docs/environment.md) | Yêu cầu môi trường phát triển |
-| [frontend/](frontend/README.md) | Dashboard React và lớp dữ liệu có kiểu; giao diện đang là placeholder |
+| [frontend/](frontend/README.md) | Dashboard React: Overview, Events và Event Detail dùng mock data |
 | [demo-service/](demo-service/README.md) | Placeholder cho ứng dụng order/loyalty và xử lý event |
 | [monitor-service/](monitor-service/README.md) | Placeholder cho quan sát event, rules và incidents |
 | [infrastructure/](infrastructure/README.md) | Placeholder cho cấu hình hạ tầng |

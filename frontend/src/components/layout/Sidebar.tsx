@@ -57,7 +57,7 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
           <p>
             Explore the interface.
             <br />
-            Data integration is pending.
+            Demo changes reset on reload.
           </p>
         </div>
       </div>

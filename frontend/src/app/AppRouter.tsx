@@ -3,7 +3,14 @@ import { AppShell } from "./AppShell";
 import { OverviewPage } from "../pages/OverviewPage";
 import { ApplicationsPage } from "../pages/ApplicationsPage";
 import { EventsPage } from "../pages/EventsPage";
-import { EventDetailPage } from "../pages/EventDetailPage";
+import { lazy, Suspense } from "react";
+import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
+
+const EventDetailPage = lazy(() =>
+  import("../pages/EventDetailPage").then((module) => ({
+    default: module.EventDetailPage,
+  })),
+);
 import { RulesPage } from "../pages/RulesPage";
 import { IncidentsPage } from "../pages/IncidentsPage";
 import { IncidentDetailPage } from "../pages/IncidentDetailPage";
@@ -16,7 +23,21 @@ export function AppRouter() {
         <Route index element={<OverviewPage />} />
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="events" element={<EventsPage />} />
-        <Route path="events/:id" element={<EventDetailPage />} />
+        <Route
+          path="events/:id"
+          element={
+            <Suspense
+              fallback={
+                <LoadingSkeleton
+                  variant="detail"
+                  label="Loading event detail screen"
+                />
+              }
+            >
+              <EventDetailPage />
+            </Suspense>
+          }
+        />
         <Route path="rules" element={<RulesPage />} />
         <Route path="incidents" element={<IncidentsPage />} />
         <Route path="incidents/:id" element={<IncidentDetailPage />} />

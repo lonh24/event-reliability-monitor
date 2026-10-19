@@ -1,6 +1,6 @@
 # ERM Dashboard
 
-React + TypeScript + Vite dashboard with a Dark Emerald application shell and a typed data layer. The eight pages remain placeholders and are not yet connected to that data layer. Unavailable metrics use a dash rather than zero; detail URLs display the requested ID without assuming a record exists. There is no live monitoring or Backend runtime.
+React + TypeScript + Vite dashboard with a Dark Emerald application shell and a typed data layer. Overview, Event Explorer and Event Detail read through MonitorApi. The other pages remain scaffold placeholders. Unavailable metrics use a dash rather than zero; a missing event returns a distinct Event Not Found state. There is no live monitoring or Backend runtime.
 
 ## Requirements and commands
 
@@ -36,7 +36,7 @@ VITE_API_BASE_URL=/api/v1
 
 Restart Vite after changing environment values. `mock` uses one in-memory adapter instance exported as `monitorApi` from `src/services/index.ts`; it performs no HTTP calls. `http` selects the real fetch adapter for all eleven Dashboard operations. Unsupported modes fail explicitly. Every `VITE_*` value is client-visible; never put secrets or internal service tokens there.
 
-HTTP mode implements method/path/query/body serialization, validated responses, structured API errors and AbortSignal handling. It has been exercised with HTTP response doubles; integration with a real Spring Boot Backend is pending. `/api/v1` is appended only once. A relative base uses the frontend origin and needs a server/reverse proxy that handles that path. A separately hosted API can use an absolute HTTP(S) base ending in `/api/v1`, with suitable server-side CORS. No proxy or Backend is started by this project. Existing placeholder pages do not make requests in either mode yet.
+HTTP mode implements method/path/query/body serialization, validated responses, structured API errors and AbortSignal handling. It has been exercised with HTTP response doubles; integration with a real Spring Boot Backend is pending. `/api/v1` is appended only once. A relative base uses the frontend origin and needs a server/reverse proxy that handles that path. A separately hosted API can use an absolute HTTP(S) base ending in `/api/v1`, with suitable server-side CORS. No proxy or Backend is started by this project. The three connected pages use the selected adapter in both modes. The remaining scaffold pages do not make requests yet.
 
 Consumers will call the shared abstraction instead of importing fixtures:
 
@@ -56,7 +56,7 @@ The full initial overview computes 30 observed / 18 confirmed / 3 open / 26 unkn
 
 Mutations share the same state inside one adapter instance: application/rule creation, desired rule enabled state and version-checked incident transitions. Reload resets data, IDs, logical clock and fault controls. There is no localStorage, cross-tab synchronization or production persistence. Rule toggles do not recompute history; resolving an incident does not repair its ledger or rewrite evaluations.
 
-For isolated tests or later loading/error/empty UI development:
+For isolated loading/error/empty tests:
 
 ```typescript
 import { createMockMonitorApi } from "./services/mockMonitorApi.ts";
@@ -77,7 +77,7 @@ Each factory has isolated state. Responses are clones, and pending requests are 
 - `src/services/mockMonitorApi.ts`, `httpMonitorApi.ts`, `index.ts`: mock/HTTP implementations and selection.
 - `src/services/contractValidation.ts`, `queryValidation.ts`, `apiErrors.ts`, `projections.ts`: boundary validation, safe errors and projections.
 - `src/mocks/`: deterministic fixtures and aggregate/pagination helpers.
-- `src/app/`, `components/`, `pages/`, `styles/`: the application shell, presentation components, placeholders and responsive styles.
+- `src/app/`, `components/`, `pages/`, `styles/`: the application shell, presentation components, data-backed monitoring screens, remaining scaffold pages and responsive styles.
 - `tests/`: contract/type, fixture, mock behavior and HTTP transport tests.
 
 [API Contract](../docs/06-api-contract.md) is authoritative. `npm run contract:sync` regenerates the two derived files from its normative schema; `contract:check` detects drift. Two internal processing-report DTOs are deliberately excluded from browser types. Do not edit generated files or change the approved contract to hide a test failure. Ajv and ajv-formats provide runtime JSON Schema validation without coercion, default insertion or dropping unknown properties; separate checks preserve Int64 bounds.
@@ -97,4 +97,26 @@ Each factory has isolated state. Responses are clones, and pending requests are 
 
 The sidebar has five destinations. Details return to their parent lists. The mobile navigation drawer supports close, Escape and keyboard navigation.
 
-Data-backed charts, event search/filter/table UI, investigation timelines, application forms, rule toggles and incident workflow buttons remain unimplemented. Presentation components for loading, empty and error states remain available. Recharts is installed for later charts and is not imported by placeholder pages.
+Overview uses the API snapshot (default 24h/hour), four cards, a responsive Recharts volume chart with partial UTC buckets, an accessible exact-count table and latest incident links. Its initial mock totals are 30 / 18 / 3 / 26; these are computed by the adapter, not constants in the page. The chart loads separately.
+
+Event Explorer searches logical eventId (trimmed, case-insensitive, up to 128 characters), combines application/processing filters with AND and uses server-style pagination (ten records per page, zero-based in the API). Changing conditions resets to the first page. Clear filters restores defaults. Filter choices load all application pages. Loading replaces prior-query records; cancelled or stale responses cannot overwrite a newer query. Retry retains the query. If a page becomes invalid after a dataset change, the UI fetches a valid page using response metadata.
+
+Event Detail uses the observed-record ID in its URL. It shows metadata, reported attempts and original reports, conflicts, latest versus historical evaluations, evidence references and read-only ledger snapshots. Null values remain unknown/unavailable; no attempts or effects are inferred from missing reports. Source, coverage, trust, finality, gaps, masked customer references and sandbox injected-ledger labels are visible. Evidence is one anchor away. Incident links lead to the existing scaffold; the incident workflow is not implemented yet.
+
+Applications create, Rules toggle, Incidents list/detail investigation and status transitions remain outside the current UI. Loading/empty/error/not-found states are distinct. No live Backend, Kafka or database is started.
+
+## Reproducible UI checks
+
+The optional browser runner uses Playwright as a local development tool; no browser framework or new runtime dependency is added to package.json:
+
+```bash
+npm install --no-save --package-lock=false playwright
+npx playwright install chromium
+npm run test:ui
+```
+
+After a fresh npm ci, reinstall that optional tool if needed. npm run test:ui starts and stops its own local Vite server. It checks the actual routes and isolated component entry, search/filter/page/reset, five scenarios, conflict/history, responsive layouts, keyboard navigation, pending/empty/error/retry, stale responses and HTTP adapter response doubles. It requires a working local Chromium installation. HTTP doubles are not Spring Boot integration tests.
+
+For manual fault checks, run npm run dev and open `/tests/ui/harness.html?page=overview&mode=slow`. Use page=overview|events|detail and mode=slow|empty|error; detail also accepts id=evt-005. The error mode fails once: Retry recovers. mode=app-error on Events isolates an application-filter failure. mode=race simulates an old search response arriving late. This test entry is not a production build input and uses its own mock instance; it never changes the main dashboard singleton.
+
+A manual check takes about five minutes: verify the four Overview values and chart; search ORDER-PAID-1003; combine app/status filters and clear; switch Events pages; inspect evt-002 through evt-005; follow an evidence link; open /events/missing-id; then use the isolated empty/error/slow modes. Check a narrow viewport as well.
