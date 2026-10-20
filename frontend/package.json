@@ -14,7 +14,8 @@
     "typecheck:tests": "tsc -p tsconfig.tests.json",
     "test:ui": "node --experimental-strip-types scripts/verify-ui.mjs",
     "test:ui:incidents": "node --experimental-strip-types scripts/verify-incidents-ui.mjs",
-    "test:ui:configuration": "node --experimental-strip-types scripts/verify-configuration-ui.mjs"
+    "test:ui:configuration": "node --experimental-strip-types scripts/verify-configuration-ui.mjs",
+    "test:ui:production": "node scripts/verify-production-ui.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0",

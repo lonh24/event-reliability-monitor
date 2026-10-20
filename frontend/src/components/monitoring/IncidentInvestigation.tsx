@@ -192,10 +192,10 @@ export function IncidentInvestigation({
               <label htmlFor="investigation-note">
                 Investigation note (optional)
               </label>
+              {/* HTML maxLength counts UTF-16 units; submit validates Unicode code points. */}
               <textarea
                 id="investigation-note"
                 rows={3}
-                maxLength={500}
                 value={note}
                 onChange={(event) => {
                   setNote(event.target.value);

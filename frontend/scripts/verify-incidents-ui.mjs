@@ -297,6 +297,11 @@ try {
       await page
         .getByRole("link", { name: "Open event evt-003", exact: false })
         .click();
+      // Incident and event screens both have Business evidence. Wait for the
+      // destination identity so retained incident content cannot satisfy readiness.
+      await page
+        .getByRole("heading", { name: "Event detail", exact: true })
+        .waitFor();
       await page
         .getByRole("heading", { name: "Business evidence", exact: true })
         .waitFor();
@@ -651,6 +656,41 @@ try {
           .isVisible(),
         false,
       );
+    },
+  );
+  await check(
+    "Investigation note preserves 500 Unicode code points through real text input and history",
+    async () => {
+      await harness();
+      await detailLoaded();
+      const note = page.getByLabel("Investigation note (optional)", { exact: true });
+      await note.focus();
+      const value = "😀".repeat(500);
+      await page.keyboard.insertText(value);
+      assert.equal(await note.inputValue(), value);
+      await save("Start investigation", "1");
+      const updated = await snapshot();
+      assert.equal(updated.history.at(-1).note, value);
+      assert.equal(await mutationCount(), 1);
+    },
+  );
+  await check(
+    "Investigation note rejects 501 Unicode code points before mutation and permits correction",
+    async () => {
+      await harness();
+      await detailLoaded();
+      const note = page.getByLabel("Investigation note (optional)", { exact: true });
+      await note.focus();
+      await page.keyboard.insertText("😀".repeat(501));
+      await page.getByRole("button", { name: "Start investigation", exact: true }).click();
+      await page.getByRole("alert").filter({ hasText: "at most 500 characters" }).waitFor();
+      assert.equal(await mutationCount(), 0);
+      assert.equal((await snapshot()).version, "0");
+      assert.equal(Array.from(await note.inputValue()).length, 501);
+      await note.fill("Corrected note");
+      await save("Start investigation", "1");
+      assert.equal((await snapshot()).history.at(-1).note, "Corrected note");
+      assert.equal(await mutationCount(), 1);
     },
   );
   await check("No uncaught browser errors", async () => {
