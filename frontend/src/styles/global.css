@@ -817,3 +817,26 @@ button:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
 .incidents-panel th, .incidents-panel td { padding-inline: 12px; }
 .history-note { min-width: 160px; max-width: 400px; overflow-wrap: anywhere; white-space: pre-wrap; }
 #incident-history, #case-evaluations { scroll-margin-top: 18px; }
+
+/* Application creation and rule configuration reuse the dashboard controls. */
+.configuration-form { display: grid; gap: 10px; max-width: 620px; }
+.configuration-form label { color: var(--text-secondary); font-size: 12px; }
+.configuration-form input, .configuration-form select { width: 100%; min-width: 0; min-height: 42px; padding: 10px 12px; color: var(--text-primary); background: var(--bg-primary); border: 1px solid var(--control-border); border-radius: var(--radius-sm); }
+.configuration-form [aria-invalid="true"] { border-color: var(--danger-text); }
+.field-error { color: var(--danger-text); font-size: 12px; }
+.field-error:empty { display: none; }
+.configuration-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.list-summary { padding: 16px 22px; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 12px; }
+.rules-panel table { min-width: 1150px; }
+.rules-panel th, .rules-panel td { padding-inline: 14px; vertical-align: top; }
+.rule-configuration { min-width: 290px; max-width: 360px; }
+.rule-configuration > strong { font-size: 11px; }
+.rule-config { margin: 12px 0; font-size: 11px; }
+.rule-config dt { color: var(--text-secondary); }
+.rule-config dd { margin: 0 0 7px; overflow-wrap: anywhere; }
+.rule-state { min-width: 210px; }
+.rule-state > button { display: flex; margin-top: 12px; }
+.rule-state .mutation-error { margin: 12px 0 0; }
+.rule-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pagination > div { flex-wrap: wrap; }
+.pagination [aria-current="page"] { border-color: var(--brand-highlight); color: var(--brand-highlight); }

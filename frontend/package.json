@@ -10,10 +10,11 @@
     "preview": "vite preview",
     "contract:sync": "node scripts/sync-api-contract.mjs",
     "contract:check": "node scripts/sync-api-contract.mjs --check",
-    "test": "node --experimental-strip-types --test tests/contract.test.ts tests/fixtures.test.ts tests/mockMonitorApi.test.ts tests/httpMonitorApi.test.ts tests/presentation.test.ts tests/incidentWorkflow.test.ts",
+    "test": "node --experimental-strip-types --test tests/contract.test.ts tests/fixtures.test.ts tests/mockMonitorApi.test.ts tests/httpMonitorApi.test.ts tests/presentation.test.ts tests/incidentWorkflow.test.ts tests/configurationWorkflow.test.ts",
     "typecheck:tests": "tsc -p tsconfig.tests.json",
     "test:ui": "node --experimental-strip-types scripts/verify-ui.mjs",
-    "test:ui:incidents": "node --experimental-strip-types scripts/verify-incidents-ui.mjs"
+    "test:ui:incidents": "node --experimental-strip-types scripts/verify-incidents-ui.mjs",
+    "test:ui:configuration": "node --experimental-strip-types scripts/verify-configuration-ui.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0",

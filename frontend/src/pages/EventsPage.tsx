@@ -92,6 +92,7 @@ export function EventsPage({ api = monitorApi }: { api?: MonitorApi }) {
           <h2 id="events-title">Observed events</h2>
           <span className="eyebrow">Demo data</span>
         </div>
+        <p className="list-summary">Newest first · occurredAt DESC</p>
         <div className="filter-bar">
           <label className="search-field">
             Logical event ID
@@ -275,6 +276,11 @@ export function EventsPage({ api = monitorApi }: { api?: MonitorApi }) {
                   </tr>
                 ))}
               </DataTable>
+              <p className="list-summary">
+                {data.totalItems === 0
+                  ? "Showing 0 of 0"
+                  : `Showing ${data.page * data.size + 1}–${data.page * data.size + data.items.length} of ${data.totalItems}`}
+              </p>
               <nav className="pagination" aria-label="Events pagination">
                 <span role="status">
                   {data.totalItems} events ·{" "}
@@ -297,6 +303,32 @@ export function EventsPage({ api = monitorApi }: { api?: MonitorApi }) {
                     <ChevronLeft size={14} aria-hidden="true" />
                     Previous
                   </button>
+                  {Array.from(
+                    new Set([
+                      0,
+                      data.page - 1,
+                      data.page,
+                      data.page + 1,
+                      data.totalPages - 1,
+                    ]),
+                  )
+                    .filter((index) => index >= 0 && index < data.totalPages)
+                    .sort((left, right) => left - right)
+                    .map((index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className="button button-secondary"
+                        aria-label={`Page ${index + 1}`}
+                        aria-current={index === data.page ? "page" : undefined}
+                        disabled={index === data.page}
+                        onClick={() =>
+                          setQuery((previous) => ({ ...previous, page: index }))
+                        }
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
                   <button
                     type="button"
                     className="button button-secondary"

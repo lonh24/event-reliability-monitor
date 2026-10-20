@@ -1,6 +1,6 @@
 # ERM Dashboard
 
-React + TypeScript + Vite dashboard with a Dark Emerald application shell and a typed data layer. Overview, Event Explorer, Event Detail and both incident pages read through MonitorApi. Applications and Rules remain scaffold placeholders. Unavailable metrics use a dash rather than zero; a missing event returns a distinct Event Not Found state. There is no live monitoring or Backend runtime.
+React + TypeScript + Vite dashboard with a Dark Emerald application shell and a typed data layer. Overview, Event Explorer, Event Detail and both incident pages read through MonitorApi. Applications supports sample creation and Rules supports configuration browsing and enabled-state changes through the same API interface. Unavailable metrics use a dash rather than zero; a missing event returns a distinct Event Not Found state. There is no live monitoring or Backend runtime.
 
 ## Requirements and commands
 
@@ -36,7 +36,7 @@ VITE_API_BASE_URL=/api/v1
 
 Restart Vite after changing environment values. `mock` uses one in-memory adapter instance exported as `monitorApi` from `src/services/index.ts`; it performs no HTTP calls. `http` selects the real fetch adapter for all eleven Dashboard operations. Unsupported modes fail explicitly. Every `VITE_*` value is client-visible; never put secrets or internal service tokens there.
 
-HTTP mode implements method/path/query/body serialization, validated responses, structured API errors and AbortSignal handling. It has been exercised with HTTP response doubles; integration with a real Spring Boot Backend is pending. `/api/v1` is appended only once. A relative base uses the frontend origin and needs a server/reverse proxy that handles that path. A separately hosted API can use an absolute HTTP(S) base ending in `/api/v1`, with suitable server-side CORS. No proxy or Backend is started by this project. The five connected pages use the selected adapter in both modes. The remaining scaffold pages do not make requests yet.
+HTTP mode implements method/path/query/body serialization, validated responses, structured API errors and AbortSignal handling. It has been exercised with HTTP response doubles; integration with a real Spring Boot Backend is pending. `/api/v1` is appended only once. A relative base uses the frontend origin and needs a server/reverse proxy that handles that path. A separately hosted API can use an absolute HTTP(S) base ending in `/api/v1`, with suitable server-side CORS. No proxy or Backend is started by this project. All seven data screens use the selected adapter in both modes.
 
 Consumers will call the shared abstraction instead of importing fixtures:
 
@@ -77,7 +77,7 @@ Each factory has isolated state. Responses are clones, and pending requests are 
 - `src/services/mockMonitorApi.ts`, `httpMonitorApi.ts`, `index.ts`: mock/HTTP implementations and selection.
 - `src/services/contractValidation.ts`, `queryValidation.ts`, `apiErrors.ts`, `projections.ts`: boundary validation, safe errors and projections.
 - `src/mocks/`: deterministic fixtures and aggregate/pagination helpers.
-- `src/app/`, `components/`, `pages/`, `styles/`: the application shell, presentation components, data-backed monitoring screens, remaining scaffold pages and responsive styles.
+- `src/app/`, `components/`, `pages/`, `styles/`: the application shell, presentation components, data-backed monitoring screens, responsive styles and configuration workflows.
 - `tests/`: contract/type, fixture, mock behavior and HTTP transport tests.
 
 [API Contract](../docs/06-api-contract.md) is authoritative. `npm run contract:sync` regenerates the two derived files from its normative schema; `contract:check` detects drift. Two internal processing-report DTOs are deliberately excluded from browser types. Do not edit generated files or change the approved contract to hide a test failure. Ajv and ajv-formats provide runtime JSON Schema validation without coercion, default insertion or dropping unknown properties; separate checks preserve Int64 bounds.
@@ -103,7 +103,7 @@ Event Explorer searches logical eventId (trimmed, case-insensitive, up to 128 ch
 
 Event Detail uses the observed-record ID in its URL. It shows metadata, reported attempts and original reports, conflicts, latest versus historical evaluations, evidence references and read-only ledger snapshots. Null values remain unknown/unavailable; no attempts or effects are inferred from missing reports. Source, coverage, trust, finality, gaps, masked customer references and sandbox injected-ledger labels are visible. Evidence is one anchor away. Incident links open the investigation detail and status workflow.
 
-Applications create and Rules toggle remain outside the current UI. Loading/empty/error/not-found states are distinct. No live Backend, Kafka or database is started.
+Applications create and Rules toggle use the shared adapter session. Loading/empty/error/not-found states are distinct. No live Backend, Kafka or database is started.
 
 ## Reproducible UI checks
 
@@ -143,3 +143,24 @@ npm run test:ui:incidents
 The original runner retains its 4A assertions; the incident runner adds filters/pages, the three-action investigation flow, valid transitions/revisions/history, shared projections, reload reset, real stale-version rejection, pending/double-submit prevention and failure reconciliation. HTTP requests are response doubles rather than a running Backend.
 
 The isolated incident entry is `/tests/ui/incidents-harness.html?page=detail&mode=conflict`. Use page=list|detail, optional id=inc-001, and mode=slow|empty|error. Additional detail modes: mutation-error (one-shot 503), invalid-transition (injected 409 rejection), conflict (another legitimate mutation wins before the stale UI request), lost-ack (a real mock commit occurs before its response is lost). List modes race and page-shrink verify stale responses and invalidated pagination. The harness owns an isolated API instance and never patches the dashboard singleton.
+
+
+## Applications and rule configuration
+
+Applications loads every API page (100 per request) and displays all records newest first by createdAt DESC. Create opens an inline labelled form; Cancel sends no request. Name is trimmed and validated as 1–100 Unicode characters. Environment is restricted to SANDBOX or DEVELOPMENT. The server response confirms creation; the form closes, feedback appears and the directory reloads. The new application appears in Events/Rules application choices on their next load and has no events or rules. Full reload restores the original two applications.
+
+A rejected create preserves input and displays API validation feedback where available. If a network/protocol/interruption error hides the result, Save is blocked until Reload applications successfully reads the directory for comparison. Names are not unique, so a successful read is not proof that another POST is needed. No POST is automatically retried.
+
+Rules shows all six seeded records over two pages, with application filtering, name ASC/DESC ordering, exact typed configuration, configVersion, updated UTC time and response-provided Event/Incident links. Application metadata is fetched by pages, not once per rule; a metadata failure retains real application IDs and permits independent Retry. Filter/order changes reset page zero. The row waits for an updateRule response before adopting its desired enabled state. Pending blocks repeated writes. A rejection keeps the last confirmed state and allows an explicit decision to retry; an uncertain result blocks further changes until Reload rules reads the current record. configVersion is not an incident locking revision and does not increment for enabled toggles.
+
+Rule enable/disable never recomputes historical evaluations, resolves incidents, repairs evidence or replays events. TIMEOUT still needs trusted completion evidence; elapsed time alone does not convert missing evidence into a violation. The UI does not expose rule creation, config editing or deletion.
+
+Event Explorer states occurredAt DESC/newest-first ordering, displays exact Showing ranges (or Showing 0 of 0) and bounded page-number controls alongside Previous/Next. Page size remains ten.
+
+```bash
+npm run test:ui:configuration
+```
+
+This optional Playwright runner complements both earlier browser suites. It uses the real screens, isolated adapters, synchronous repeated submissions, server field errors, committed-but-lost responses, failed/successful reconciliation reads, immutable history, related links, shared state, reload reset, HTTP response doubles, responsive widths 1440/768/390 and keyboard focus. No new application dependency is added. Local Chromium and the optional Playwright setup above are required.
+
+For isolated manual checks open `/tests/ui/configuration-harness.html?page=applications&mode=lost-ack`. Choose page=applications|rules and mode=slow|empty|error|save-error|lost-ack|http. Applications also supports validation; Rules supports app-error|race|page-shrink. HTTP mode requires an API or response doubles. This entry uses a private test instance and is excluded from the production build.
